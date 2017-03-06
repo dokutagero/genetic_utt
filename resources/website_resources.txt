@@ -1,0 +1,3 @@
+A very nice explanation about git good practices :)
+Nice and easy read.
+http://nvie.com/posts/a-successful-git-branching-model/
