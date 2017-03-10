@@ -1,3 +1,9 @@
 A very nice explanation about git good practices :)
 Nice and easy read.
 http://nvie.com/posts/a-successful-git-branching-model/
+
+Guideline for Object-Oriented Python
+https://jeffknupp.com/blog/2014/06/18/improve-your-python-python-classes-and-object-oriented-programming/
+
+Docs of virtual environments Python (virtualenvwrapper)
+https://virtualenvwrapper.readthedocs.io/en/latest/
