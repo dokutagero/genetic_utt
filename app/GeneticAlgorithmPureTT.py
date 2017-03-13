@@ -28,9 +28,10 @@ class GeneticAlgorithmPureTT():
                     ind = idcs.pop()
                     individual[ind] = int(course[1:])
 
-
-            while test_feasibilty(individual) != True:
-                pass
+            idx_conflict = self.test_feasibility(individual)
+            while idx_conflict != None:
+                individual = self.random_swap(idx_conflict, individual)
+                idx_conflict = self.test_feasibility(individual)
 
             population.append(individual)
 
@@ -51,9 +52,33 @@ class GeneticAlgorithmPureTT():
     def replacement(self):
         pass
 
-    def test_feasibilty(individual):
+    def random_swap(self, idx_conflict, individual):
+        row = np.random.randint(0, individual.shape[0])
+        col = np.random.randint(0, individual.shape[1])
 
-        for course, constraint in data["unavailability"].iteritems():
+        tmp = individual[(row,col)]
+        individual[(row,col)] = individual[idx_conflict]
+        print 'miau'
+        print idx_conflict
+        print individual[idx_conflict]
+        individual[idx_conflict] = tmp
+        print 'swapped'
+        print individual[:, idx_conflict[1]]
+        return individual
+
+
+
+    def test_feasibility(self, individual):
+
+        for course, constraints in self.data["unavailability"].iteritems():
             course_no = int(course[1:])
-
-        pass
+            for idx in zip(constraints["day"], constraints["period"]):
+                # print idx
+                # print individual.shape
+                conflict_timeslot = (self.data["basics"]["periods_per_day"])*idx[0]+idx[1]
+                if course_no in individual[:,conflict_timeslot]:
+                    print course_no
+                    # print individual[:, conflict_timeslot]
+                    room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]
+                    print individual[room_idx, conflict_timeslot]
+                    return (room_idx, conflict_timeslot)
