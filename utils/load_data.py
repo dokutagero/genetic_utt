@@ -1,15 +1,15 @@
 import csv
-path = "../UniversityTimetablingCompetition/Test01/"
+path = "UniversityTimetablingCompetition/Test01/"
 
 def load(params):
-	data = []
-	data.append(load_basics(params[0]))
-	data.append(load_courses(params[1]))
-	data.append(load_lecturers(params[2]))
-	data.append(load_rooms(params[3]))
-	data.append(load_curriculas(params[4]))
-	data.append(load_relations(params[5]))
-	data.append(load_unavailability(params[6]))
+	data = {}
+	data["basics"] = (load_basics(params[0]))
+	data["courses"] = (load_courses(params[1]))
+	data["lecturers"] = (load_lecturers(params[2]))
+	data["rooms"] = (load_rooms(params[3]))
+	data["curricula"] = (load_curriculas(params[4]))
+	data["relations"] = (load_relations(params[5]))
+	data["unavailability"] = (load_unavailability(params[6]))
 
 	return data
 
@@ -58,11 +58,9 @@ def load_relations(file_name):
 			curriculum, course = line
 
 			if curriculum in data:
-				tmp = data[curriculum]
-				tmp.append(course)
-				data[curriculum] = tmp
+				data[curriculum].append(course)
 			else:
-				data[curriculum] = {"course": course}
+				data[curriculum] = [course]
 
 	return data
 
