@@ -95,6 +95,9 @@ def load_basics(file_name):
 		csv_reader.next()
 		for line in csv_reader:
 			courses, rooms, days, periods_per_day, curricula, constraints, lecturers = line
-			data = {"courses": courses, "rooms":rooms , "days":days , "periods_per_day":periods_per_day, "curricula":curricula, "constraints":constraints, "lecturers":lecturers}
+			data = {"courses": int(courses), "rooms": int(rooms) , "days": int(days),
+			 		"periods_per_day" : int(periods_per_day),
+					"curricula" : int(curricula), "constraints" : int(constraints),
+					"lecturers" : int(lecturers)}
 
 	return data

@@ -12,7 +12,7 @@ data = load_data.load(sys.argv[1:-1])
 #
 mutation_prob = 0.001
 pop_size = 10
-ga = GeneticAlgorithmPureTT(pop_size, mutation_prob)
+ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob)
 
 
 
