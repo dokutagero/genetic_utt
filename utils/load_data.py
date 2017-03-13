@@ -31,9 +31,14 @@ def load_unavailability(file_name):
 		csv_reader = csv.reader(csvfile, delimiter=' ')
 		csv_reader.next()
 		for line in csv_reader:
-			course, day, period = line
-			data[course] = {"day": day, "period": period}
 
+			course, day, period = line
+
+			if course in data:
+				data[course]["day"].append(int(day))
+				data[course]["period"].append(int(period))
+			else:
+				data[course] = {"day" : [int(day)], "period" : [int(period)]}
 	return data
 
 
