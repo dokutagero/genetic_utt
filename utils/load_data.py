@@ -12,6 +12,8 @@ def load(params):
 	data["unavailability"] = (load_unavailability(params[6]))
 	text_to_int_courses(data)
 	unavailability_slots(data)
+	curricula_conflicts(data)
+	lecturer_lectures(data)
 	return data
 
 def text_to_int_courses(data):
@@ -29,6 +31,21 @@ def unavailability_slots(data):
 		for day, period in zip(unav['day'], unav['period']):
 			data["unavailable_slots"][course].append(day*6 + period)
 
+def curricula_conflicts(data):
+	data["curric_conflict"] = {}
+	for curricula, courses in data["relations"].iteritems():
+		for course in courses:
+			data["curric_conflict"][course] = [c for c in courses if c != course]
+
+
+def lecturer_lectures(data):
+	data["lecturer_lecture"] = {}
+
+	for course, info in data["courses"].iteritems():
+		if data["course_int"][course] not in data["lecturer_lecture"].keys():
+			data["lecturer_lecture"][data["course_int"][course]] = [info["lecturer"]]
+		else:
+			data["lecturer_lecture"][course].append(info["lecturer"])
 
 def load_courses(file_name):
 	data = {}
