@@ -39,6 +39,12 @@ class FitnessFunctionTT(FitnessFunctionBase):
         """
         pass
 
+
+    def check_single_lecturer(self,course, idx, individual):
+        if self.data["lecturer_lecture"][course] in [l for c,l in data["lecturer_lecture"] if c != course]:
+            return False
+
+
     def check_room_occupancy_constraint(self):
         """
         Two lectures cannot take place in the same room in the same time slot.
@@ -90,7 +96,12 @@ class FitnessFunctionTT(FitnessFunctionBase):
                     room_idx = np.where(individual[:,timeslot] == int(courses[indx][1:]))[0][0]
 
                     return (room_idx, timeslot)
-        pass
+
+
+    def check_single_conflict(self, course, idx, individual):
+        # If given course is repeated in same timeslot or has other currical subss
+        if course in [c for c in individual[:,idx[1]] if c != course]:
+            return False
 
     def check_availability_constraint(self, individual):
         """
