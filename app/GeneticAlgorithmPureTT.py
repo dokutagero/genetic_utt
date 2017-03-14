@@ -1,6 +1,7 @@
 # import GeneticAlgorithmBase
 import numpy as np
 import time
+from collections import Counter
 
 class GeneticAlgorithmPureTT():
 
@@ -18,7 +19,10 @@ class GeneticAlgorithmPureTT():
 
     def initialization(self, num_rooms, timeslots):
         population = []
-        finish_time = time.time() + 60*1
+        finish_time = time.time() + 60*3
+
+        time_start = time.time()
+        iteration = 0
         for i in range(self.population_size):
             individual = np.zeros(shape=(num_rooms, timeslots), dtype=np.int8) - 1
             idcs = [idcs for idcs, val in np.ndenumerate(individual)]
@@ -31,6 +35,10 @@ class GeneticAlgorithmPureTT():
 
             idx_conflict = self.test_feasibility(individual)
             while idx_conflict != None:
+                tmp = time.time()-time_start
+                if (tmp)%10 == 0:
+                    print "itteration: ", iteration, " time: ", tmp
+                iteration+=1
                 # if finish_time < time.time():
                 #     population.append(individual)
                 #     return population
@@ -38,6 +46,7 @@ class GeneticAlgorithmPureTT():
                 idx_conflict = self.test_feasibility(individual)
 
             population.append(individual)
+        print time.time()-time_start
         return population
 
     def evaluation(self, fitness_func):
@@ -61,13 +70,33 @@ class GeneticAlgorithmPureTT():
 
         tmp = individual[(row,col)]
         individual[(row,col)] = individual[idx_conflict]
-        # print 'miau'
-        # print idx_conflict
-        # print individual[idx_conflict]
         individual[idx_conflict] = tmp
-        # print 'swapped'
-        # print individual[:, idx_conflict[1]]
+
         return individual
+
+
+# TODO DO ONLY ALLOWED SWAPS -----------> Doesn't seem to work very well <-----------
+        # row = np.random.randint(0, individual.shape[0])
+        # col = np.random.randint(0, individual.shape[1])
+        #
+        # copy = deepcopy(individual)
+        # copy[(row,col)] = individual[idx_conflict]
+        # copy[idx_conflict] = individual[(row,col)]
+        #
+        # idx_conflict = self.test_feasibility(copy)
+        # while idx_conflict is not None:
+        #     row = np.random.randint(0, individual.shape[0])
+        #     col = np.random.randint(0, individual.shape[1])
+        #
+        #     copy = deepcopy(individual)
+        #     copy[(row,col)] = individual[idx_conflict]
+        #     copy[idx_conflict] = individual[(row,col)]
+        #     idx_conflict = self.test_feasibility(copy)
+        #
+        # individual[(row,col)] = copy[idx_conflict]
+        # individual[idx_conflict] = copy[(row,col)]
+        #
+        # return individual
 
 
 
@@ -77,31 +106,52 @@ class GeneticAlgorithmPureTT():
         for course, constraints in self.data["unavailability"].iteritems():
             course_no = int(course[1:])
             for idx in zip(constraints["day"], constraints["period"]):
-                # print idx
-                # print individual.shape
                 conflict_timeslot = (self.data["basics"]["periods_per_day"])*idx[0]+idx[1]
                 if course_no in individual[:,conflict_timeslot]:
-                    # print course_no
-                    # print individual[:, conflict_timeslot]
+                    # print "Unavailability conflict"
                     room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]
-                    # print individual[room_idx, conflict_timeslot]
                     return (room_idx, conflict_timeslot)
 
 
         # Curricula
-        for num_timeslot in range(individual.shape[1]):
-            for curricula, courses in self.data["relations"].iteritems():
-                # courses_tmp = courses
-                row_curricula_conflict = []
-                for course in courses:
-                    # print 'holaaaaa'
-                    # print courses
-                    # print course[1:]
-                    row_curricula_conflict.extend(np.where(individual[:,num_timeslot] == int(course[1:]))[0])
-                    if len(row_curricula_conflict) > 1:
-                        # print 'row curricula'
-                        # print row_curricula_conflict[-1]
-                        return (row_curricula_conflict[-1], num_timeslot)
+        for timeslot in range(individual.shape[1]):
+            timeslot_courses = individual[:,timeslot]
+
+            for curriculum, courses in self.data["relations"].iteritems():
+                count = Counter(timeslot_courses)
+                count = [count[int(course[1:])] for course in courses]
+                if sum(count) > 1:
+                    # print "Curricula conflict"
+                    indx = np.nonzero(count)[0][0]
+                    room_idx = np.where(individual[:,timeslot] == int(courses[indx][1:]))[0][0]
+
+                    return (room_idx, timeslot)
+
+
+        # lecturers
+        lecturers_courses = {}
+
+        for course, info in self.data["courses"].iteritems():
+            lecturer = info["lecturer"]
+
+            if lecturer in lecturers_courses:
+                lecturers_courses[lecturer].append(int(course[1:]))
+            else:
+                lecturers_courses[lecturer] = [int(course[1:])]
+
+        for timeslot in range(individual.shape[1]):
+            timeslot_courses = individual[:,timeslot]
+
+            for lecturer, courses in lecturers_courses.iteritems():
+                count = Counter(timeslot_courses)
+                count = [count[course] for course in courses]
+
+                if sum(count) > 1:
+                    print "Lecturer conflict"
+                    indx = np.nonzero(count)[0][0]
+                    room_idx = np.where(individual[:,timeslot] == courses[indx])[0][0]
+
+                    return (room_idx, timeslot)
 
 
     def print_population(self):
