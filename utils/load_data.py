@@ -11,6 +11,7 @@ def load(params):
 	data["relations"] = (load_relations(params[5]))
 	data["unavailability"] = (load_unavailability(params[6]))
 	text_to_int_courses(data)
+	unavailability_slots(data)
 	return data
 
 def text_to_int_courses(data):
@@ -20,7 +21,15 @@ def text_to_int_courses(data):
 		data["course_int"][course_name] = int(course_name[1:])
 		data["course_str"][int(course_name[1:])] = course_name
 
-		
+
+def unavailability_slots(data):
+	data["unavailable_slots"] = {}
+	for course, unav in data["unavailability"].iteritems():
+		data["unavailable_slots"][course] = []
+		for day, period in zip(unav['day'], unav['period']):
+			data["unavailable_slots"][course].append(day*6 + period)
+
+
 def load_courses(file_name):
 	data = {}
 	with open(path+file_name, 'rb') as csvfile:
