@@ -6,7 +6,7 @@ from app.FitnessFunctionTT import FitnessFunctionTT as fftt
 
 # def main():
 
-
+# python2 memetic_algo.py basic.utt courses.utt lecturers.utt rooms.utt curricula.utt relation.utt unavailability.utt 1000
 runtime = sys.argv[-1]
 
 data = load_data.load(sys.argv[1:-1])

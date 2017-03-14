@@ -10,9 +10,17 @@ def load(params):
 	data["curricula"] = (load_curriculas(params[4]))
 	data["relations"] = (load_relations(params[5]))
 	data["unavailability"] = (load_unavailability(params[6]))
-
+	text_to_int_courses(data)
 	return data
 
+def text_to_int_courses(data):
+	data["course_int"] = {}
+	data["course_str"] = {}
+	for course_name in data["courses"].keys():
+		data["course_int"][course_name] = int(course_name[1:])
+		data["course_str"][int(course_name[1:])] = course_name
+
+		
 def load_courses(file_name):
 	data = {}
 	with open(path+file_name, 'rb') as csvfile:
