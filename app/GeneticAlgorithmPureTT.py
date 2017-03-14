@@ -2,13 +2,15 @@
 import numpy as np
 import time
 from collections import Counter
+import FitnessFunctionTT as fftt
 
 class GeneticAlgorithmPureTT():
 
-    def __init__(self, data, population_size, mutation_prob):
+    def __init__(self, data, population_size, mutation_prob, fitness_model):
         self.population_size = population_size
         self.mutation_prob = mutation_prob
         self.data = data
+        self.fitness_model = fitness_model
 
         # Create random initial population
         self.population = self.initialization(data["basics"]["rooms"],
@@ -102,30 +104,37 @@ class GeneticAlgorithmPureTT():
 
     def test_feasibility(self, individual):
 
-        # Unavailability
-        for course, constraints in self.data["unavailability"].iteritems():
-            course_no = int(course[1:])
-            for idx in zip(constraints["day"], constraints["period"]):
-                conflict_timeslot = (self.data["basics"]["periods_per_day"])*idx[0]+idx[1]
-                if course_no in individual[:,conflict_timeslot]:
-                    # print "Unavailability conflict"
-                    room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]
-                    return (room_idx, conflict_timeslot)
+
+        res = self.fitness_model.check_availability_constraint(individual)
+        if res is not None:
+            return res
+        # # Unavailability
+        # for course, constraints in self.data["unavailability"].iteritems():
+        #     course_no = int(course[1:])
+        #     for idx in zip(constraints["day"], constraints["period"]):
+        #         conflict_timeslot = (self.data["basics"]["periods_per_day"])*idx[0]+idx[1]
+        #         if course_no in individual[:,conflict_timeslot]:
+        #             # print "Unavailability conflict"
+        #             room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]
+        #             return (room_idx, conflict_timeslot)
 
 
-        # Curricula
-        for timeslot in range(individual.shape[1]):
-            timeslot_courses = individual[:,timeslot]
-
-            for curriculum, courses in self.data["relations"].iteritems():
-                count = Counter(timeslot_courses)
-                count = [count[int(course[1:])] for course in courses]
-                if sum(count) > 1:
-                    # print "Curricula conflict"
-                    indx = np.nonzero(count)[0][0]
-                    room_idx = np.where(individual[:,timeslot] == int(courses[indx][1:]))[0][0]
-
-                    return (room_idx, timeslot)
+        res = self.fitness_model.check_conflicts_constraint(individual)
+        if res is not None:
+            return res
+        # # Curricula
+        # for timeslot in range(individual.shape[1]):
+        #     timeslot_courses = individual[:,timeslot]
+        #
+        #     for curriculum, courses in self.data["relations"].iteritems():
+        #         count = Counter(timeslot_courses)
+        #         count = [count[int(course[1:])] for course in courses]
+        #         if sum(count) > 1:
+        #             # print "Curricula conflict"
+        #             indx = np.nonzero(count)[0][0]
+        #             room_idx = np.where(individual[:,timeslot] == int(courses[indx][1:]))[0][0]
+        #
+        #             return (room_idx, timeslot)
 
 
         # lecturers
