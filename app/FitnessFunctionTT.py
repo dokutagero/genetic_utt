@@ -113,9 +113,15 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         for course, constraints in self.data["unavailability"].iteritems():
             course_no = int(course[1:])
-            for idx in zip(constraints["day"], constraints["period"]):
-                conflict_timeslot = (self.data["basics"]["periods_per_day"])*idx[0]+idx[1]
+            for timeslot_tuple in zip(constraints["day"], constraints["period"]):
+                # self.check_single_availability(course, timeslot_tuple, individual)
+                conflict_timeslot = (self.data["basics"]["periods_per_day"])*timeslot_tuple[0]+timeslot_tuple[1]
                 if course_no in individual[:,conflict_timeslot]:
                     # print "Unavailability conflict"
                     room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]
                     return (room_idx, conflict_timeslot)
+
+
+    def check_single_availability(self,course, timeslot_tup):
+        if (timeslot_tup[0]*6 + timeslot_tup[1]) in data["unavailable_slots"][course]:
+            return False
