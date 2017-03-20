@@ -45,15 +45,34 @@ class GeneticAlgorithmPureTT():
                 if (tmp)%10 == 0:
                     print "itteration: ", iteration, " time: ", tmp
                 iteration+=1
+                row = np.random.randint(0, individual.shape[0])
+                col = np.random.randint(0, individual.shape[1])
+                while(
+                        self.fitness_model.check_single_availability(individual[idx_conflict],row*6+col) or
+                        self.fitness_model.check_single_availability(individual[(row,col)], row*6+col) or
+                        self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
+                        self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
+
+                    ):
+                    # print counter
+                    # counter += 1
+                    # print row,col
+                    # print idx_conflict
+                    # print self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual)
+                    # print self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual)
+                    # print self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual)
+                    # print self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
+                    row = np.random.randint(0, individual.shape[0])
+                    col = np.random.randint(0, individual.shape[1])
+                # print idx_conflict
                 # if finish_time < time.time():
                 #     population.append(individual)
                 #     return population
-                row = np.random.randint(0, individual.shape[0])
-                col = np.random.randint(0, individual.shape[1])
+
                 individual = self.random_swap(idx_conflict, (row,col), individual)
                 # idx_conflict = self.test_feasibility(individual)
                 idx_conflict = self.fitness_model.check_conflicts_constraint(individual)
-
+            '''
             idx_conflict = self.fitness_model.check_availability_constraint(individual)
 
             while idx_conflict != None:
@@ -96,7 +115,7 @@ class GeneticAlgorithmPureTT():
 
 
                 idx_conflict = self.fitness_model.check_availability_constraint(individual)
-
+            '''
         population.append(individual)
         print time.time()-time_start
         return population
