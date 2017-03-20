@@ -25,7 +25,8 @@ class GeneticAlgorithmPureTT():
 
         time_start = time.time()
         iteration = 0
-        for i in range(self.population_size):
+        # for i in range(self.population_size):
+        while len(population) < self.population_size:
             individual = np.zeros(shape=(num_rooms, timeslots), dtype=np.int8) - 1
             idcs = [idcs for idcs, val in np.ndenumerate(individual)]
             np.random.shuffle(idcs)
@@ -35,90 +36,49 @@ class GeneticAlgorithmPureTT():
                     ind = idcs.pop()
                     individual[ind] = int(course[1:])
 
+            individual = self.randomize_individual(individual)
+            if individual is None:
+                continue
 
-            # First we solve the curricula problem.
-            idx_conflict = self.fitness_model.check_conflicts_constraint(individual)
-            print idx_conflict
-            # idx_conflict = self.test_feasibility(individual)
-            while idx_conflict != None:
-                tmp = time.time()-time_start
-                if (tmp)%10 == 0:
-                    print "itteration: ", iteration, " time: ", tmp
-                iteration+=1
-                row = np.random.randint(0, individual.shape[0])
-                col = np.random.randint(0, individual.shape[1])
-                while(
-                        self.fitness_model.check_single_availability(individual[idx_conflict],row*6+col) or
-                        self.fitness_model.check_single_availability(individual[(row,col)], row*6+col) or
-                        self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
-                        self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-
-                    ):
-                    # print counter
-                    # counter += 1
-                    # print row,col
-                    # print idx_conflict
-                    # print self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual)
-                    # print self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual)
-                    # print self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual)
-                    # print self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-                    row = np.random.randint(0, individual.shape[0])
-                    col = np.random.randint(0, individual.shape[1])
-                # print idx_conflict
-                # if finish_time < time.time():
-                #     population.append(individual)
-                #     return population
-
-                individual = self.random_swap(idx_conflict, (row,col), individual)
-                # idx_conflict = self.test_feasibility(individual)
-                idx_conflict = self.fitness_model.check_conflicts_constraint(individual)
-            '''
-            idx_conflict = self.fitness_model.check_availability_constraint(individual)
-
-            while idx_conflict != None:
-                tmp = time.time()-time_start
-                if (tmp)%10 == 0:
-                    print "itteration: ", iteration, " time: ", tmp
-                iteration+=1
-                row = np.random.randint(0, individual.shape[0])
-                col = np.random.randint(0, individual.shape[1])
-                counter = 0
-
-                # print self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual)
-                # print self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual)
-                # print self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual)
-                # print self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-                # print row,col
-                # print idx_conflict
-
-                while(
-                        self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual) or
-                        self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual) or
-                        self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
-                        self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-
-                    ):
-                    # print counter
-                    counter += 1
-                    # print row,col
-                    # print idx_conflict
-                    # print self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual)
-                    # print self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual)
-                    # print self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual)
-                    # print self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-                    row = np.random.randint(0, individual.shape[0])
-                    col = np.random.randint(0, individual.shape[1])
-                # print idx_conflict
-                # print (row,col)
-                # print 'MIAU'
-                individual = self.random_swap(idx_conflict, (row,col), individual)
-
-
-                idx_conflict = self.fitness_model.check_availability_constraint(individual)
-            '''
-        population.append(individual)
+            population.append(individual)
         print time.time()-time_start
         return population
+
+    def randomize_individual(self, individual):
+        start_time = time.time()
+
+
+        for i in range(individual.shape[0]):
+            for j in range(individual.shape[1]):
+                idx = (i,j)
+                if (
+                    self.fitness_model.check_single_conflict(individual[idx], idx, individual, self_check=True) or
+                    self.fitness_model.check_single_availability(individual[idx], j) or
+                    self.fitness_model.check_single_lecturer(individual[idx], idx, individual, self_check=True)
+                ):
+
+                    row = np.random.randint(0, individual.shape[0])
+                    col = np.random.randint(0, individual.shape[1])
+                    idx_conflict = idx
+                    while(
+                            self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual) or
+                            self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual) or
+                            self.fitness_model.check_single_availability(individual[idx_conflict], col) or
+                            self.fitness_model.check_single_availability(individual[(row,col)], idx_conflict[1]) or
+                            self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
+                            self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
+                        ):
+                        if time.time() - start_time > 10:
+                            print "discarded..", i, j
+                            return None
+
+                        row = np.random.randint(0, individual.shape[0])
+                        col = np.random.randint(0, individual.shape[1])
+
+                    individual = self.random_swap(idx_conflict, (row,col), individual)
+
+        return individual
+
 
     def evaluation(self, fitness_func):
         pass
@@ -225,7 +185,7 @@ class GeneticAlgorithmPureTT():
                 count = [count[course] for course in courses]
 
                 if sum(count) > 1:
-                    print "Lecturer conflict"
+                    # print "Lecturer conflict"
                     indx = np.nonzero(count)[0][0]
                     room_idx = np.where(individual[:,timeslot] == courses[indx])[0][0]
 
@@ -233,11 +193,11 @@ class GeneticAlgorithmPureTT():
 
 
     def print_population(self):
-
+        with open('first_output.sol', 'w'): pass
         for course in self.data["courses"].keys():
             course_room, course_tslots = np.where(self.population[0] == int(course[1:]))
-            days = [day/6 for day in course_tslots]
-            periods = [day%6 for day in course_tslots]
+            days = [day/self.data['basics']['periods_per_day'] for day in course_tslots]
+            periods = [day%self.data['basics']['periods_per_day'] for day in course_tslots]
 
 
             with open('first_output.sol', 'a') as outputfile:
