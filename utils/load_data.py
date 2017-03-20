@@ -10,8 +10,48 @@ def load(params):
 	data["curricula"] = (load_curriculas(params[4]))
 	data["relations"] = (load_relations(params[5]))
 	data["unavailability"] = (load_unavailability(params[6]))
-
+	text_to_int_courses(data)
+	unavailability_slots(data)
+	curricula_conflicts(data)
+	lecturer_lectures(data)
 	return data
+
+def text_to_int_courses(data):
+	data["course_int"] = {}
+	data["course_str"] = {}
+	for course_name in data["courses"].keys():
+		data["course_int"][course_name] = int(course_name[1:])
+		data["course_str"][int(course_name[1:])] = course_name
+
+
+def unavailability_slots(data):
+	data["unavailable_slots"] = {}
+	for course in data["course_str"].keys():
+		data["unavailable_slots"][course] = []
+
+	for course, unav in data["unavailability"].iteritems():
+		# data["unavailable_slots"][data["course_int"][course]] = []
+		for day, period in zip(unav['day'], unav['period']):
+			data["unavailable_slots"][data["course_int"][course]].append(day*6 + period)
+
+def curricula_conflicts(data):
+	data["curric_conflict"] = {}
+	for curricula, courses in data["relations"].iteritems():
+		for course in courses:
+			if data["curric_conflict"].has_key(int(course[1:])):
+				data["curric_conflict"][int(course[1:])].union(set([int(c[1:]) for c in courses]))
+			else:
+				data["curric_conflict"][int(course[1:])] = set([int(c[1:]) for c in courses])
+
+
+def lecturer_lectures(data):
+	data["lecturer_lecture"] = {}
+
+	for course, info in data["courses"].iteritems():
+		if data["course_int"][course] not in data["lecturer_lecture"].keys():
+			data["lecturer_lecture"][data["course_int"][course]] = [info["lecturer"]]
+		else:
+			data["lecturer_lecture"][course].append(info["lecturer"])
 
 def load_courses(file_name):
 	data = {}
