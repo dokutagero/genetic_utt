@@ -41,7 +41,18 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def check_single_lecturer(self,course, idx, individual):
-        if self.data["lecturer_lecture"][course] in [l for c,l in data["lecturer_lecture"] if c != course]:
+        # If same lecturer in same slot returns False
+        if course == -1:
+            return False
+
+        lecturers_in_slot = [l for c in individual[:,idx[1]] if c!=-1 for l in self.data["lecturer_lecture"][c] ]
+        print 'TEEEEEEST'
+        print lecturers_in_slot
+        print self.data["lecturer_lecture"][course]
+        #elif self.data["lecturer_lecture"][course] in [l for c,l in self.data["lecturer_lecture"][individual[idx]] if c != course]:
+        if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
+            return True
+        else:
             return False
 
 
@@ -99,9 +110,23 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def check_single_conflict(self, course, idx, individual):
-        # If given course is repeated in same timeslot or has other currical subss
-        if course in [c for c in individual[:,idx[1]] if c != course]:
+        # If given course is repeated in same timeslot or has other currical subs
+        # returns False
+        print individual[:,idx[1]]
+        # if len([c for c in individual[:,idx[1]] if c == course])>0:
+            # return True
+        if course == -1:
             return False
+
+        course_conflicts = self.data["curric_conflict"][course]
+        print course_conflicts
+        for c in individual[:,idx[1]]:
+            if c in course_conflicts:
+                print 'FUCKING TRUE'
+
+                return True
+
+        return False
 
     def check_availability_constraint(self, individual):
         """
@@ -134,5 +159,11 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def check_single_availability(self,course, timeslot_tup):
-        if (timeslot_tup[0]*6 + timeslot_tup[1]) in data["unavailable_slots"][course]:
+        # Returns False if problem
+        # print timeslot_tup
+        if course == -1:
+            return False
+        if (timeslot_tup[1]) in self.data["unavailable_slots"][course]:
+            return True
+        else:
             return False

@@ -26,16 +26,22 @@ def text_to_int_courses(data):
 
 def unavailability_slots(data):
 	data["unavailable_slots"] = {}
-	for course, unav in data["unavailability"].iteritems():
+	for course in data["course_str"].keys():
 		data["unavailable_slots"][course] = []
+
+	for course, unav in data["unavailability"].iteritems():
+		# data["unavailable_slots"][data["course_int"][course]] = []
 		for day, period in zip(unav['day'], unav['period']):
-			data["unavailable_slots"][course].append(day*6 + period)
+			data["unavailable_slots"][data["course_int"][course]].append(day*6 + period)
 
 def curricula_conflicts(data):
 	data["curric_conflict"] = {}
 	for curricula, courses in data["relations"].iteritems():
 		for course in courses:
-			data["curric_conflict"][course] = [c for c in courses if c != course]
+			if data["curric_conflict"].has_key(int(course[1:])):
+				data["curric_conflict"][int(course[1:])].union(set([int(c[1:]) for c in courses]))
+			else:
+				data["curric_conflict"][int(course[1:])] = set([int(c[1:]) for c in courses])
 
 
 def lecturer_lectures(data):
