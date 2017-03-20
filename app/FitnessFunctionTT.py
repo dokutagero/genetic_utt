@@ -158,12 +158,12 @@ class FitnessFunctionTT(FitnessFunctionBase):
                     return (room_idx, conflict_timeslot)
 
 
-    def check_single_availability(self,course, timeslot_tup):
+    def check_single_availability(self,course, timeslot):
         # Returns False if problem
         # print timeslot_tup
         if course == -1:
             return False
-        if (timeslot_tup[1]) in self.data["unavailable_slots"][course]:
+        if timeslot in self.data["unavailable_slots"][course]:
             return True
         else:
             return False
