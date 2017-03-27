@@ -54,6 +54,7 @@ class GeneticAlgorithmPureTT():
 
             population.append(individual)
         print time.time()-time_start
+        self.fitness_model.evaluate(individual)
         return population
 
     def randomize_individual(self, individual):
