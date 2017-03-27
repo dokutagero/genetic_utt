@@ -33,12 +33,24 @@ class GeneticAlgorithmPureTT():
 
             for course, course_info in self.data["courses"].iteritems():
                 for num_lecture in range(course_info["number_of_lectures"]):
-                    ind = idcs.pop()
-                    individual[ind] = int(course[1:])
+                    scheduled = False
+                    i = 0
 
-            individual = self.randomize_individual(individual)
-            if individual is None:
-                continue
+                    while not scheduled:
+                        if i == len(idcs):
+                            break
+                        ind = idcs.pop(0)
+                        course_id = int(course[1:])
+                        if (
+                            self.fitness_model.check_single_conflict(course_id, ind, individual, self_check=False) or
+                            self.fitness_model.check_single_availability(course_id, ind[1]) or
+                            self.fitness_model.check_single_lecturer(course_id, ind, individual, self_check=False)
+                        ):
+                            idcs.append(ind)
+                            i += 1
+                        else:
+                            scheduled = True
+                            individual[ind] = course_id
 
             population.append(individual)
         print time.time()-time_start
@@ -70,7 +82,7 @@ class GeneticAlgorithmPureTT():
                             self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
                         ):
                         if time.time() - start_time > 0.5:
-                            print "discarded..", i, j
+                            # print "discarded..", i, j
                             return None
 
                         row = np.random.randint(0, individual.shape[0])

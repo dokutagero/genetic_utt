@@ -176,13 +176,13 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def check_single_availability(self, course, timeslot):
-        # Returns False if problem
+        # Returns False if no problem
         # print timeslot_tup
-        print 'AVAILABILITY CHECK'
-        print timeslot
-        print course
-        if course != -1:
-            print self.data["unavailable_slots"][course]
+        # print 'AVAILABILITY CHECK'
+        # print timeslot
+        # print course
+        # if course != -1:
+        #     print course, " ", self.data["unavailable_slots"][course]
 
         if course == -1:
             return False
