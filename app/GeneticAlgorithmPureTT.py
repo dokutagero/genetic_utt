@@ -60,37 +60,37 @@ class GeneticAlgorithmPureTT():
         start_time = time.time()
 
 
-        for i in range(individual.shape[0]):
-            for j in range(individual.shape[1]):
-                idx = (i,j)
-                if (
-                    self.fitness_model.check_single_conflict(individual[idx], idx, individual, self_check=True) or
-                    self.fitness_model.check_single_availability(individual[idx], j) or
-                    self.fitness_model.check_single_lecturer(individual[idx], idx, individual, self_check=True)
-                ):
-
-
-                    row = np.random.randint(0, individual.shape[0])
-                    col = np.random.randint(0, individual.shape[1])
-                    idx_conflict = idx
-                    while(
-                            self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual) or
-                            self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual) or
-                            self.fitness_model.check_single_availability(individual[idx_conflict], col) or
-                            self.fitness_model.check_single_availability(individual[(row,col)], idx_conflict[1]) or
-                            self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
-                            self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-                        ):
-                        if time.time() - start_time > 0.5:
-                            # print "discarded..", i, j
-                            return None
-
-                        row = np.random.randint(0, individual.shape[0])
-                        col = np.random.randint(0, individual.shape[1])
-
-                    individual = self.random_swap(idx_conflict, (row,col), individual)
-
-        return individual
+        # for i in range(individual.shape[0]):
+        #     for j in range(individual.shape[1]):
+        #         idx = (i,j)
+        #         if (
+        #             self.fitness_model.check_single_conflict(individual[idx], idx, individual, self_check=True) or
+        #             self.fitness_model.check_single_availability(individual[idx], j) or
+        #             self.fitness_model.check_single_lecturer(individual[idx], idx, individual, self_check=True)
+        #         ):
+        #
+        #
+        #             row = np.random.randint(0, individual.shape[0])
+        #             col = np.random.randint(0, individual.shape[1])
+        #             idx_conflict = idx
+        #             while(
+        #                     self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual) or
+        #                     self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual) or
+        #                     self.fitness_model.check_single_availability(individual[idx_conflict], col) or
+        #                     self.fitness_model.check_single_availability(individual[(row,col)], idx_conflict[1]) or
+        #                     self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
+        #                     self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
+        #                 ):
+        #                 if time.time() - start_time > 0.5:
+        #                     # print "discarded..", i, j
+        #                     return None
+        #
+        #                 row = np.random.randint(0, individual.shape[0])
+        #                 col = np.random.randint(0, individual.shape[1])
+        #
+        #             individual = self.random_swap(idx_conflict, (row,col), individual)
+        #
+        # return individual
 
 
     def evaluation(self, fitness_func):
