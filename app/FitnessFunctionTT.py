@@ -40,20 +40,31 @@ class FitnessFunctionTT(FitnessFunctionBase):
         pass
 
 
-    def check_single_lecturer(self,course, idx, individual):
+    def check_single_lecturer(self,course, idx, individual, self_check=False):
         # If same lecturer in same slot returns False
         if course == -1:
             return False
 
         lecturers_in_slot = [l for c in individual[:,idx[1]] if c!=-1 for l in self.data["lecturer_lecture"][c] ]
-        print 'TEEEEEEST'
-        print lecturers_in_slot
-        print self.data["lecturer_lecture"][course]
+        # print 'TEEEEEEST'
+        # print lecturers_in_slot
+        # print self.data["lecturer_lecture"][course]
         #elif self.data["lecturer_lecture"][course] in [l for c,l in self.data["lecturer_lecture"][individual[idx]] if c != course]:
+
+        if self_check == True:
+            lecturers_in_slot = [l for c in individual[:,idx[1]] if c!=-1 and c!=course for l in self.data["lecturer_lecture"][c] ]
+
         if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
             return True
         else:
             return False
+
+
+        # we assume one lecturer per course with the 0 index
+        # if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
+        #     return True
+        # else:
+        #     return False
 
 
     def check_room_occupancy_constraint(self):
@@ -109,22 +120,28 @@ class FitnessFunctionTT(FitnessFunctionBase):
                     return (room_idx, timeslot)
 
 
-    def check_single_conflict(self, course, idx, individual):
+    def check_single_conflict(self, course, idx, individual, self_check=False):
         # If given course is repeated in same timeslot or has other currical subs
         # returns False
-        print individual[:,idx[1]]
+        # print individual[:,idx[1]]
         # if len([c for c in individual[:,idx[1]] if c == course])>0:
             # return True
         if course == -1:
             return False
 
-        course_conflicts = self.data["curric_conflict"][course]
-        print course_conflicts
-        for c in individual[:,idx[1]]:
-            if c in course_conflicts:
-                print 'FUCKING TRUE'
 
+        course_conflicts = self.data["curric_conflict"][course]
+        if self_check == True:
+            # print "should never be less than 1 ", [c for c in individual[:,idx[1]] if c in course_conflicts]
+            if len([c for c in individual[:,idx[1]] if c in course_conflicts])>1:
                 return True
+        else:
+            # print course_conflicts
+            for c in individual[:,idx[1]]:
+                if c in course_conflicts:
+                    # print 'FUCKING TRUE'
+
+                    return True
 
         return False
 
@@ -158,7 +175,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
                     return (room_idx, conflict_timeslot)
 
 
-    def check_single_availability(self,course, timeslot):
+    def check_single_availability(self, course, timeslot):
         # Returns False if problem
         # print timeslot_tup
         print 'AVAILABILITY CHECK'
@@ -169,6 +186,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         if course == -1:
             return False
+
         if timeslot in self.data["unavailable_slots"][course]:
 
             return True

@@ -32,7 +32,7 @@ def unavailability_slots(data):
 	for course, unav in data["unavailability"].iteritems():
 		# data["unavailable_slots"][data["course_int"][course]] = []
 		for day, period in zip(unav['day'], unav['period']):
-			data["unavailable_slots"][int(course[1:])].append(day*6 + period)
+			data["unavailable_slots"][data["course_int"][course]].append(day*data['basics']['periods_per_day'] + period)
 
 def curricula_conflicts(data):
 	data["curric_conflict"] = {}
