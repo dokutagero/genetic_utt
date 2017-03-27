@@ -89,7 +89,7 @@ def load_rooms(file_name):
 		csv_reader.next()
 		for line in csv_reader:
 			room, capacity = line
-			data[room] = {"capacity": capacity}
+			data[int(room[1:])] = int(capacity)
 
 	return data
 
