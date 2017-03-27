@@ -32,14 +32,14 @@ def unavailability_slots(data):
 	for course, unav in data["unavailability"].iteritems():
 		# data["unavailable_slots"][data["course_int"][course]] = []
 		for day, period in zip(unav['day'], unav['period']):
-			data["unavailable_slots"][data["course_int"][course]].append(day*6 + period)
+			data["unavailable_slots"][int(course[1:])].append(day*6 + period)
 
 def curricula_conflicts(data):
 	data["curric_conflict"] = {}
 	for curricula, courses in data["relations"].iteritems():
 		for course in courses:
 			if data["curric_conflict"].has_key(int(course[1:])):
-				data["curric_conflict"][int(course[1:])].union(set([int(c[1:]) for c in courses]))
+				data["curric_conflict"][int(course[1:])] = data["curric_conflict"][int(course[1:])].union(set([int(c[1:]) for c in courses]))
 			else:
 				data["curric_conflict"][int(course[1:])] = set([int(c[1:]) for c in courses])
 
