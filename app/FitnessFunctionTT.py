@@ -2,21 +2,24 @@ from FitnessFunctionBase import FitnessFunctionBase
 from collections import Counter
 import numpy as np
 from scipy.stats import itemfreq
-
+import pandas as pd
 class FitnessFunctionTT(FitnessFunctionBase):
 
     def __init__(self, data):
         super(FitnessFunctionTT, self).__init__(data)
 
     def evaluate(self, individual):
-        penalty = 0
-        penalty += self.unscheduled_penalty(individual)
-        penalty += self.capacity_penalty(individual)
-        penalty += self.min_days_penalty(individual)
-        penalty += self.compactness_penalty(individual)
-        penalty += self.room_penalty(individual)
+        penalty = []
+        penalty.append(self.unscheduled_penalty(individual))
+        penalty.append(self.capacity_penalty(individual))
+        penalty.append(self.min_days_penalty(individual))
+        penalty.append(self.compactness_penalty(individual))
+        penalty.append(self.room_penalty(individual))
 
-        print penalty
+        for val in penalty:
+            print val
+
+        print sum(penalty)
 
 
     def check_hard_constraints(self):
@@ -84,9 +87,35 @@ class FitnessFunctionTT(FitnessFunctionBase):
     def compactness_penalty(self, individual):
         penalty = 2
         value = 0
+        periods_per_day = self.data['basics']['periods_per_day']
 
-        # for slot in np.arange(len(individual[0,:])):
-        #     for room in np.arange(len(individual[:,0])):
+        secluded = np.ones( (len(individual[:,0]), len(individual[0,])) )
+        for slot in np.arange((len(individual[0,:])-1)):
+            if (slot // periods_per_day) == ((slot+1) // periods_per_day):
+                next_slot = {}
+
+                for i in np.arange(len(individual[:,0])):
+                    course = individual[i,(slot+1)]
+                    if course != -1:
+                        courses = self.data['curric_conflict'][course]
+
+                        for c in courses:
+                            if next_slot.has_key(c):
+                                tmpIndex = next_slot[c]['indices']
+                                tmpIndex.append(i)
+                                tmpCourses = next_slot[c]['curriculum_courses'].union(courses)
+                                next_slot[c] = {'indices': tmpIndex, 'curriculum_courses':tmpCourses}
+                            else:
+                                next_slot[c] = {'indices':[i], 'curriculum_courses': courses}
+
+                for i in np.arange(len(individual[:,0])):
+                    course = individual[i,slot]
+                    if course != -1 and next_slot.has_key(course):
+                        secluded[i,slot] = 0
+                        for j in next_slot[course]['indices']:
+                            secluded[j,(slot+1)] = 0
+
+        value = sum(sum(secluded))
 
         return value * penalty
 
@@ -97,20 +126,19 @@ class FitnessFunctionTT(FitnessFunctionBase):
         all_rooms = self.data['rooms']
         courses   = self.data['courses']
         courses_names = self.data['course_str']
-        rooms = {}
+        schedule = {}
 
         for room in np.arange(len(individual[:,0])):
             for slot in np.arange(len(individual[0,:])):
                 course = individual[room, slot]
 
                 if course != -1:
-                    if course in rooms:
-                        if room != rooms[course]['first']:
-                            rooms[course]['penalty'] = rooms[course]['penalty'] + 1
+                    if schedule.has_key(course):
+                        schedule[course].append(room)
                     else:
-                        rooms[course] = {'first': room, 'penalty': 0}
+                        schedule[course] = [room]
 
-        value = sum([room['penalty'] for room in rooms.values()])
+        value = sum([(len(np.unique(rooms))-1) for rooms in schedule.values()])
         return value * penalty
 
 
