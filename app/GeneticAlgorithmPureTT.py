@@ -3,6 +3,7 @@ import numpy as np
 import time
 from collections import Counter
 import FitnessFunctionTT as fftt
+import random
 
 class GeneticAlgorithmPureTT():
 
@@ -16,7 +17,7 @@ class GeneticAlgorithmPureTT():
         self.population = self.initialization(data["basics"]["rooms"],
                         data["basics"]["periods_per_day"] * data["basics"]["days"])
 
-        self.print_population()
+        # self.print_population()
 
 
     def initialization(self, num_rooms, timeslots):
@@ -56,9 +57,9 @@ class GeneticAlgorithmPureTT():
         print time.time()-time_start
         return population
 
-    def randomize_individual(self, individual):
-        start_time = time.time()
-
+    # def randomize_individual(self, individual):
+    #     start_time = time.time()
+    #
 
         # for i in range(individual.shape[0]):
         #     for j in range(individual.shape[1]):
@@ -99,8 +100,52 @@ class GeneticAlgorithmPureTT():
     def selection(self):
         pass
 
-    def recombination(self):
-        pass
+    def recombination(self, parent1, parent2):
+
+        # # Random cuts for columns
+        # col_cut1, col_cut2 = sorted(random.sample(range(parent1.shape[1]), 2))
+        # # Random cuts for rows
+        # row_cut1, row_cut2 = sorted(random.sample(range(parent1.shape[0]), 2))
+
+        row_cut1, row_cut2 = 2,3
+        col_cut1, col_cut2 = 4,7
+
+        print "Column cuts: ", col_cut1, col_cut2
+        print "Row cuts: ", row_cut1, row_cut2
+
+        offspring1 = np.copy(parent1)
+        offspring2 = np.copy(parent2)
+
+        offspring = [offspring1, offspring2]
+
+        for child, parent in zip(offspring, [parent2, parent1]):
+            for r in range(row_cut1, row_cut2 + 1):
+                for c in range(col_cut1, col_cut2 + 1):
+                    course2swap = parent[r,c]
+                    ind = np.where(child == course2swap)
+
+                    for r_prime, c_prime in zip(ind[0], ind[1]):
+                        if (
+                            self.fitness_model.check_single_conflict(child[r_prime, c_prime], (r, c), child, self_check=False) or
+                            self.fitness_model.check_single_conflict(child[r, c], (r_prime,c_prime), child, self_check=False) or
+                            self.fitness_model.check_single_availability(child[r,c], c_prime) or
+                            self.fitness_model.check_single_availability(child[r_prime, c_prime], c) or
+                            self.fitness_model.check_single_lecturer(child[r,c], (r_prime, c_prime), child, self_check=False) or
+                            self.fitness_model.check_single_lecturer(child[r_prime, c_prime], (r,c), child, self_check=False)
+                        ):
+                            continue
+                        else:
+                            child = self.random_swap((r,c), (r_prime, c_prime), child)
+                            break
+
+        return offspring
+
+
+
+
+
+
+
 
     def mutation(self):
         pass
@@ -117,6 +162,7 @@ class GeneticAlgorithmPureTT():
         individual[idx_conflict] = tmp
 
         return individual
+
 
 
 # TODO DO ONLY ALLOWED SWAPS -----------> Doesn't seem to work very well <-----------
@@ -205,14 +251,14 @@ class GeneticAlgorithmPureTT():
                     return (room_idx, timeslot)
 
 
-    def print_population(self):
-        with open('first_output.sol', 'w'): pass
+    def print_population(self, individual, filename='first_output.sol'):
+        with open(filename, 'w'): pass
         for course in self.data["courses"].keys():
-            course_room, course_tslots = np.where(self.population[0] == int(course[1:]))
+            course_room, course_tslots = np.where(individual == int(course[1:]))
             days = [day/self.data['basics']['periods_per_day'] for day in course_tslots]
             periods = [day%self.data['basics']['periods_per_day'] for day in course_tslots]
 
 
-            with open('first_output.sol', 'a') as outputfile:
+            with open(filename, 'a') as outputfile:
                 for day, period, room in zip(days, periods, course_room):
                     print >> outputfile, course, day, period, 'R'+'%04d' % room
