@@ -1,21 +1,147 @@
 from FitnessFunctionBase import FitnessFunctionBase
 from collections import Counter
 import numpy as np
-
-
+from scipy.stats import itemfreq
+import pandas as pd
 class FitnessFunctionTT(FitnessFunctionBase):
 
     def __init__(self, data):
         super(FitnessFunctionTT, self).__init__(data)
 
-    def evaluate(self):
-        pass
+    def evaluate(self, individual):
+        penalty = []
+        penalty.append(self.unscheduled_penalty(individual))
+        penalty.append(self.capacity_penalty(individual))
+        penalty.append(self.min_days_penalty(individual))
+        penalty.append(self.compactness_penalty(individual))
+        penalty.append(self.room_penalty(individual))
+
+        for val in penalty:
+            print val
+
+        print sum(penalty)
+
 
     def check_hard_constraints(self):
         pass
 
     def check_soft_constraints(self):
         pass
+
+    def unscheduled_penalty(self, individual):
+        penalty = 10
+        value = 0
+
+        occurrences_scheduled = dict((entry[0], entry[1]) for entry in itemfreq(individual.flatten()))
+        occurrences_desired   = dict((int(course[1:]), info["number_of_lectures"]) for (course,info) in self.data["courses"].iteritems())
+
+        for key in occurrences_desired:
+            value += occurrences_desired[key] - occurrences_scheduled[key]
+
+        return value * penalty
+
+    def capacity_penalty(self, individual):
+        penalty = 1
+        value = 0
+
+        all_rooms = self.data['rooms']
+        courses   = self.data['courses']
+        courses_names = self.data['course_str']
+
+        for room in np.arange(len(individual[:,0])):
+            capacity = all_rooms[room]
+
+            for slot in np.arange(len(individual[0,:])):
+                course = individual[room, slot]
+                if course != -1:
+                    number_of_students = courses[courses_names[course]]['number_of_students']
+                    value += max(0, number_of_students - capacity)
+
+        return value * penalty
+
+    def min_days_penalty(self, individual):
+        penalty = 5
+        value = 0
+        periods_per_day = self.data['basics']['periods_per_day']
+        working_days = self.data['basics']['days']
+        courses =  self.data['basics']['courses']
+
+        scheduled = np.zeros((courses, working_days))
+        for slot in np.arange(len(individual[0,:])):
+            day = slot // periods_per_day
+
+            for room in np.arange(len(individual[:,0])):
+                course = individual[room, slot]
+
+                if course != -1:
+                    scheduled[course, day] = 1
+
+        days_desired = dict((int(course[1:]), info["minimum_working_days"]) for (course,info) in self.data["courses"].iteritems())
+
+        for key in days_desired:
+            value += max(0, days_desired[key] - sum(scheduled[key,:]))
+
+        return value * penalty
+
+
+    def compactness_penalty(self, individual):
+        penalty = 2
+        value = 0
+        periods_per_day = self.data['basics']['periods_per_day']
+
+        secluded = np.ones( (len(individual[:,0]), len(individual[0,])) )
+        for slot in np.arange((len(individual[0,:])-1)):
+            if (slot // periods_per_day) == ((slot+1) // periods_per_day):
+                next_slot = {}
+
+                for i in np.arange(len(individual[:,0])):
+                    course = individual[i,(slot+1)]
+                    if course != -1:
+                        courses = self.data['curric_conflict'][course]
+
+                        for c in courses:
+                            if next_slot.has_key(c):
+                                tmpIndex = next_slot[c]['indices']
+                                tmpIndex.append(i)
+                                tmpCourses = next_slot[c]['curriculum_courses'].union(courses)
+                                next_slot[c] = {'indices': tmpIndex, 'curriculum_courses':tmpCourses}
+                            else:
+                                next_slot[c] = {'indices':[i], 'curriculum_courses': courses}
+
+                for i in np.arange(len(individual[:,0])):
+                    course = individual[i,slot]
+                    if course != -1 and next_slot.has_key(course):
+                        secluded[i,slot] = 0
+                        for j in next_slot[course]['indices']:
+                            secluded[j,(slot+1)] = 0
+
+        value = sum(sum(secluded))
+
+        return value * penalty
+
+
+    def room_penalty(self, individual):
+        penalty = 1
+        value = 0
+        all_rooms = self.data['rooms']
+        courses   = self.data['courses']
+        courses_names = self.data['course_str']
+        schedule = {}
+
+        for room in np.arange(len(individual[:,0])):
+            for slot in np.arange(len(individual[0,:])):
+                course = individual[room, slot]
+
+                if course != -1:
+                    if schedule.has_key(course):
+                        schedule[course].append(room)
+                    else:
+                        schedule[course] = [room]
+
+        value = sum([(len(np.unique(rooms))-1) for rooms in schedule.values()])
+        return value * penalty
+
+
 
     def check_lectures_constraint(self):
         """
@@ -25,7 +151,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         A whole individual is checked in order to determine if the condition
         stated above is fulfilled. In case that a gene of the individual
-        violates such condition, the index is returned.
+    violates such condition, the index is returned.
 
         Args:
             individual (ndarray): Individual representation.
