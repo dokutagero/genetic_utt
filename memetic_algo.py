@@ -10,7 +10,7 @@ import csv
 # python2 memetic_algo.py basic.utt courses.utt lecturers.utt rooms.utt curricula.utt relation.utt unavailability.utt 1000
 runtime = sys.argv[-1]
 
-data = load_data.load(sys.argv[1:-1])
+data = load_data.load(sys.argv[1:])
 fitness_model = fftt(data)
 #
 mutation_prob = 0.001
