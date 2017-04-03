@@ -17,6 +17,8 @@ class GeneticAlgorithmPureTT():
         self.population = self.initialization(data["basics"]["rooms"],
                         data["basics"]["periods_per_day"] * data["basics"]["days"])
 
+        self.best_individual = None
+
         # self.print_population()
 
 
@@ -40,7 +42,11 @@ class GeneticAlgorithmPureTT():
 
             iteration += 1
         print 'Best individual iteration ', iteration
+        best_individual = self.fitness_model.get_best(self.population)
+        print 'BEEEEEEEEEST'
         print self.fitness_model.evaluate(self.population[best_individual])
+        self.print_population(self.population[best_individual])
+
 
 
 
