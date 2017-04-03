@@ -120,8 +120,8 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         courses = self.data["courses"]
         days_desired = dict((int(course[1:]), info["minimum_working_days"]) for (course,info) in courses.iteritems())
-        values = sum(max(0, days_desired[key] - sum(scheduled[key,:])) for key in days_desired)
-
+         for key in days_desired:
+             value += max(0, days_desired[key] - sum(scheduled[key,:]))
         # Actually slower than above
         # values = 0
         # for course, info in courses.iteritems():
