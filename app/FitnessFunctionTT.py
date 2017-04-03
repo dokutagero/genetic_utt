@@ -369,3 +369,8 @@ class FitnessFunctionTT(FitnessFunctionBase):
             return True
         else:
             return False
+
+
+    def get_best(self, population):
+        fitness_values = [self.evaluate(individual) for individual in population]
+        return fitness_values.index(min(fitness_values))

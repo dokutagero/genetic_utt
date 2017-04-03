@@ -24,16 +24,25 @@ class GeneticAlgorithmPureTT():
 
         # Population is already initialized from the constructor
         init_time = time.time()
+        best_individual = self.fitness_model.get_best(self.population)
+        iteration = 0
+        print 'Best individual iteration ', iteration
+        print self.fitness_model.evaluate(self.population[best_individual])
         while ((time.time() - init_time) < self.data["run_time"]):
-            # Select 4 individuals
-             p1, p2 = self.selection()
-             o1, o2 = self.recombination(p1,p2)
-            # Crossover individuals best pairs
-            # Mutate offspring
-            # Substitute 2 worst by 2 offspring
+            # Select 4 individuals randomly and return best of pairs
+            p1, p2 = self.selection()
+            o1, o2 = self.recombination(p1,p2)
+            o1_prime, o2_prime = self.mutation((o1, o2))
+            # Select 4 individuals and return worst of pairs
+            w1, w2 = self.selection(best_selection=False)
+            self.population[w1] = o1_prime
+            self.population[w2] = o2_prime
+
+            iteration += 1
+        print 'Best individual iteration ', iteration
+        print self.fitness_model.evaluate(self.population[best_individual])
 
 
-        pass
 
 
     def initialization(self, num_rooms, timeslots):
@@ -122,11 +131,11 @@ class GeneticAlgorithmPureTT():
         # fitness_values = [self.evaluation(individual) for idx in individual_indices for individual in self.population[idx]]
         fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
         if best_selection:
-            return individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
-                    individual_indices[fitness_values.index(min(fitness_values[2], fitness_values[3]))]
+            return (individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
+                    individual_indices[fitness_values.index(min(fitness_values[2], fitness_values[3]))])
         else:
-            return individual_indices[fitness_values.index(max(fitness_values[0], fitness_values[1]))],
-                    individual_indices[fitness_values.index(max(fitness_values[2], fitness_values[3]))]
+            return (individual_indices[fitness_values.index(max(fitness_values[0], fitness_values[1]))],
+                    individual_indices[fitness_values.index(max(fitness_values[2], fitness_values[3]))])
 
 
 
@@ -138,12 +147,14 @@ class GeneticAlgorithmPureTT():
         # col_cut1, col_cut2 = sorted(random.sample(range(parent1.shape[1]), 2))
         # # Random cuts for rows
         # row_cut1, row_cut2 = sorted(random.sample(range(parent1.shape[0]), 2))
+        parent1 = self.population[parent1]
+        parent2 = self.population[parent2]
+        # print parent1
+        row_cut1, row_cut2 = np.random.choice(range(parent1.shape[0]), size=2)
+        col_cut1, col_cut2 = np.random.choice(range(parent1.shape[1]), size=2)
 
-        row_cut1, row_cut2 = 2,3
-        col_cut1, col_cut2 = 4,7
-
-        print "Column cuts: ", col_cut1, col_cut2
-        print "Row cuts: ", row_cut1, row_cut2
+        # print "Column cuts: ", col_cut1, col_cut2
+        # print "Row cuts: ", row_cut1, row_cut2
 
         offspring1 = np.copy(parent1)
         offspring2 = np.copy(parent2)
@@ -179,7 +190,32 @@ class GeneticAlgorithmPureTT():
 
 
 
-    def mutation(self):
+    def mutation(self, offspring):
+        mutated_offspring = []
+        for child in offspring:
+            probability_matrix = np.random.rand(child.shape[0], child.shape[1])
+            mutation_idcs = np.where(probability_matrix <= self.mutation_prob)
+            for room, ts in zip(mutation_idcs[0], mutation_idcs[1]):
+                row = np.random.randint(0, child.shape[0])
+                col = np.random.randint(0, child.shape[1])
+                if (
+                    self.fitness_model.check_single_conflict(child[room,ts], (row,col), child, self_check=False) or
+                    self.fitness_model.check_single_conflict(child[row, col], (room, ts), child, self_check=False) or
+                    self.fitness_model.check_single_availability(child[row,col], ts) or
+                    self.fitness_model.check_single_availability(child[room, ts], col) or
+                    self.fitness_model.check_single_lecturer(child[row,col], (room, ts), child, self_check=False) or
+                    self.fitness_model.check_single_lecturer(child[room, ts], (row,col), child, self_check=False)
+                ):
+                    continue
+                # print 'MUTATED INDICES'
+                # print room,ts
+                # print row,col
+                child = self.random_swap((room, ts), (row, col), child)
+            # mutated_offspring.append(child)
+
+        return offspring
+
+
         pass
 
     def replacement(self):

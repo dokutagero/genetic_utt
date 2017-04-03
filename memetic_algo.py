@@ -13,7 +13,7 @@ runtime = sys.argv[-1]
 data = load_data.load(sys.argv[1:])
 fitness_model = fftt(data)
 #
-mutation_prob = 0.001
+mutation_prob = 0.05
 pop_size = 20
 ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
                             fitness_model=fitness_model)
