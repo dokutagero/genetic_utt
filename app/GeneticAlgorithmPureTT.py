@@ -20,11 +20,26 @@ class GeneticAlgorithmPureTT():
         # self.print_population()
 
 
+    def genetic_simulation(self):
+
+        # Population is already initialized from the constructor
+        init_time = time.time()
+        while ((time.time() - time_start) < self.data["run_time"]):
+            # Select 4 individuals
+            parent_candidates, replace_candidates = self.selection()
+            # Crossover individuals best pairs
+            # Mutate offspring
+            # Substitute 2 worst by 2 offspring
+
+
+        pass
+
+
     def initialization(self, num_rooms, timeslots):
         population = []
         finish_time = time.time() + 60*3
-
         time_start = time.time()
+
         iteration = 0
         # for i in range(self.population_size):
         while len(population) < self.population_size:
