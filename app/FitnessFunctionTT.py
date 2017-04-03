@@ -98,9 +98,9 @@ class FitnessFunctionTT(FitnessFunctionBase):
                 course = individual[i,j]
                 if course != -1:
                     curricula = self.data["course_curricula"][course]
-                    secluded[(i,j)] = copy.deepcopy(curricula)
+                    secluded[(i,j)] = {'curricula': copy.deepcopy(curricula), 'copy': copy.deepcopy(curricula)}
                 else:
-                    secluded[(i,j)] = []
+                    secluded[(i,j)] = {'curricula': [], 'copy': []}
 
         for slot in np.arange((len(individual[0,:])-1)):
             if (slot // periods_per_day) == ((slot+1) // periods_per_day):
@@ -109,36 +109,20 @@ class FitnessFunctionTT(FitnessFunctionBase):
                     course = individual[i,slot]
 
                     if course != -1:
-                        curricula = secluded[i,slot]
-                        for curriculum in curricula:
+                        curricula_copy = secluded[i,slot]['copy']
+                        curricula_working = secluded[i,slot]['curricula']
+                        for curriculum in curricula_copy:
                             for j in np.arange(len(individual[:,0])):
-                                curricula_next = secluded[j,(slot+1)]
+                                curricula_next_copy = secluded[j,(slot+1)]['copy']
+                                curricula_next_working = secluded[j,(slot+1)]['curricula']
 
-                                if curriculum in curricula_next:
-                                    print 'lecture - next slot ', individual[j, (slot+1)]
-                                    print 'lecture - current slot ', individual[i, (slot)]
-                                    print curriculum
-                                    print 'current ',secluded[i,(slot)]
-                                    print 'next ',secluded[j,(slot+1)]
-                                    secluded[i,slot].remove(curriculum)
-                                    secluded[j,(slot+1)].remove(curriculum)
-                                    print 'current after del',secluded[i,(slot)]
-                                    print 'next after del',secluded[j,(slot+1)]
-                                    print '==============='
+                                if curriculum in curricula_next_copy:
+                                    if curriculum in curricula_working:
+                                        secluded[i,slot]['curricula'].remove(curriculum)
+                                    if curriculum in curricula_next_working:
+                                        secluded[j,(slot+1)]['curricula'].remove(curriculum)
 
-
-
-        for i in np.arange(len(individual[:,0])):
-            for slot in np.arange((len(individual[0,:]))):
-                print individual[i,slot],
-            print '\n'
-        print '\n'
-        for i in np.arange(len(individual[:,0])):
-            for slot in np.arange((len(individual[0,:]))):
-                print secluded[i,slot],
-            print '\n'
-
-        value = sum([len(curricula) for curricula in secluded.values()])
+        value = sum([len(curricula['curricula']) for curricula in secluded.values()])
 
         return value * penalty
 
