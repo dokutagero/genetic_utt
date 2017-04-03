@@ -18,11 +18,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
         penalty.append(self.compactness_penalty(individual))
         penalty.append(self.room_penalty(individual))
 
-        for val in penalty:
-            print val
-
-        print sum(penalty)
-
+        return sum(penalty)
 
     def check_hard_constraints(self):
         pass
