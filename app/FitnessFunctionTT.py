@@ -75,19 +75,14 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         penalty = 1
         value = 0
-
         all_rooms = self.data['rooms']
-        # courses   = self.data['courses']
-        # courses_names = self.data['course_str']
         students_per_course = self.data['students_per_course']
 
         for room in range(0, len(individual[:,0])):
-            capacity = all_rooms[room]
-
             for slot in range(0, len(individual[0,:])):
                 course = individual[room, slot]
                 if course != -1:
-                    value += max(0, students_per_course[course] - capacity)
+                    value += max(0, students_per_course[course] - all_rooms[room])
 
         return value * penalty
 
