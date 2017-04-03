@@ -127,7 +127,6 @@ class FitnessFunctionTT(FitnessFunctionBase):
         # for course, info in courses.iteritems():
         #     values += max(0, info['minimum_working_days'] - sum(scheduled[course[1:],:]))
 
-
         return value * penalty
 
 
