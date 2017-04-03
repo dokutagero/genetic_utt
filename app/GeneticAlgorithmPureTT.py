@@ -24,9 +24,10 @@ class GeneticAlgorithmPureTT():
 
         # Population is already initialized from the constructor
         init_time = time.time()
-        while ((time.time() - time_start) < self.data["run_time"]):
+        while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals
-            parent_candidates, replace_candidates = self.selection()
+             p1, p2 = self.selection()
+             o1, o2 = self.recombination(p1,p2)
             # Crossover individuals best pairs
             # Mutate offspring
             # Substitute 2 worst by 2 offspring
@@ -110,11 +111,26 @@ class GeneticAlgorithmPureTT():
         # return individual
 
 
-    def evaluation(self, fitness_func):
-        pass
+    def evaluation(self, individual):
+        return self.fitness_model.evaluate(individual)
 
-    def selection(self):
-        pass
+
+    def selection(self, best_selection=True):
+
+        individual_indices = np.random.choice(range(len(self.population)), size=4, replace=False)
+
+        # fitness_values = [self.evaluation(individual) for idx in individual_indices for individual in self.population[idx]]
+        fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
+        if best_selection:
+            return individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
+                    individual_indices[fitness_values.index(min(fitness_values[2], fitness_values[3]))]
+        else:
+            return individual_indices[fitness_values.index(max(fitness_values[0], fitness_values[1]))],
+                    individual_indices[fitness_values.index(max(fitness_values[2], fitness_values[3]))]
+
+
+
+        # pass
 
     def recombination(self, parent1, parent2):
 

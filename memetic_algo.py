@@ -14,13 +14,14 @@ data = load_data.load(sys.argv[1:])
 fitness_model = fftt(data)
 #
 mutation_prob = 0.001
-pop_size = 2
+pop_size = 20
 ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
                             fitness_model=fitness_model)
+ga.genetic_simulation()
 
 
 
-offspring = ga.recombination(ga.population[0], ga.population[1])
+# offspring = ga.recombination(ga.population[0], ga.population[1])
 
 
 
