@@ -31,6 +31,22 @@ class FitnessFunctionTT(FitnessFunctionBase):
         pass
 
     def unscheduled_penalty(self, individual):
+        """
+        Each course has a predetermined amount of lectures that must
+        be given. As many of these lectures as possible must be sched-
+        uled. Each course that has a lecture which is not scheduled gives
+        a penalty of 10 points.
+
+        A whole individual is checked in order to calculate the penalty
+
+        Args:
+            individual (ndarray): Individual representation.
+
+
+        Returns:
+            penalty:   The penalty for not scheduling all the lectures for some courses
+        """
+
         penalty = 10
         value = 0
 
@@ -45,6 +61,22 @@ class FitnessFunctionTT(FitnessFunctionBase):
         return value * penalty
 
     def capacity_penalty(self, individual):
+        """
+        For each lecture, the number of students that attend the course
+        must be less or equal than the number of seats of all the rooms
+        that host its lectures. Each student above the capacity counts as
+        1 point of penalty.
+
+        A whole individual is checked in order to calculate the penalty
+
+        Args:
+            individual (ndarray): Individual representation.
+
+
+        Returns:
+            penalty:   The penalty for scheduling lectures in not big enough rooms
+        """
+
         penalty = 1
         value = 0
 
@@ -64,6 +96,21 @@ class FitnessFunctionTT(FitnessFunctionBase):
         return value * penalty
 
     def min_days_penalty(self, individual):
+        """
+        The lectures of each course must be spread into a given minimum
+        number of days. Each day below the minimum counts as 5 points
+        of penalty.
+
+        A whole individual is checked in order to calculate the penalty
+
+        Args:
+            individual (ndarray): Individual representation.
+
+
+        Returns:
+            penalty:   The penalty for not spreading the course over minimum number of days
+        """
+
         penalty = 5
         value = 0
         periods_per_day = self.data['basics']['periods_per_day']
@@ -89,12 +136,32 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def compactness_penalty(self, individual):
+        """
+        Lectures belonging to a curriculum should be adjacent to each
+        other (i.e., in consecutive time slots). For a given curriculum we
+        call a lecture from the curriculum secluded if it is not scheduled
+        adjacent to any other lecture from the same curriculum within
+        the same day. Each secluded lecture in a curriculum counts as 2
+        points of penalty.
+
+        A whole individual is checked in order to calculate the penalty
+
+        Args:
+            individual (ndarray): Individual representation.
+
+
+        Returns:
+            penalty:   The penalty for not having compactness for courses in curricula
+        """
+
         penalty = 2
         periods_per_day = self.data['basics']['periods_per_day']
+        no_ts = len(individual[0,:])
+        no_rooms = len(individual[:,0])
 
         secluded = dict()
-        for i in np.arange(len(individual[:,0])):
-            for j in np.arange(len(individual[0,:])):
+        for i in np.arange(no_rooms):
+            for j in np.arange(no_ts):
                 course = individual[i,j]
                 if course != -1:
                     curricula = self.data["course_curricula"][course]
@@ -102,21 +169,21 @@ class FitnessFunctionTT(FitnessFunctionBase):
                 else:
                     secluded[(i,j)] = {'curricula': [], 'copy': []}
 
-        for slot in np.arange((len(individual[0,:])-1)):
+        for slot in np.arange((no_ts-1)):
             if (slot // periods_per_day) == ((slot+1) // periods_per_day):
 
-                for i in np.arange(len(individual[:,0])):
+                for i in np.arange(no_rooms):
                     course = individual[i,slot]
 
                     if course != -1:
                         curricula_copy = secluded[i,slot]['copy']
-                        curricula_working = secluded[i,slot]['curricula']
                         for curriculum in curricula_copy:
-                            for j in np.arange(len(individual[:,0])):
+                            for j in np.arange(no_rooms):
                                 curricula_next_copy = secluded[j,(slot+1)]['copy']
-                                curricula_next_working = secluded[j,(slot+1)]['curricula']
 
                                 if curriculum in curricula_next_copy:
+                                    curricula_working = secluded[i,slot]['curricula']
+                                    curricula_next_working = secluded[j,(slot+1)]['curricula']
                                     if curriculum in curricula_working:
                                         secluded[i,slot]['curricula'].remove(curriculum)
                                     if curriculum in curricula_next_working:
@@ -128,11 +195,24 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def room_penalty(self, individual):
+        """
+        All lectures of a course should be given in the same room. Each
+        distinct room used for the lectures of a course, but the rst, counts
+        as 1 point of penalty.
+
+        A whole individual is checked in order to calculate the penalty
+
+        Args:
+            individual (ndarray): Individual representation.
+
+
+        Returns:
+            penalty:   The penalty for using more than one room per course
+        """
+
         penalty = 1
         value = 0
-        all_rooms = self.data['rooms']
         courses   = self.data['courses']
-        courses_names = self.data['course_str']
         schedule = {}
 
         for room in np.arange(len(individual[:,0])):
@@ -174,15 +254,10 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def check_single_lecturer(self,course, idx, individual, self_check=False):
-        # If same lecturer in same slot returns False
         if course == -1:
             return False
 
         lecturers_in_slot = [l for c in individual[:,idx[1]] if c!=-1 for l in self.data["lecturer_lecture"][c] ]
-        # print 'TEEEEEEST'
-        # print lecturers_in_slot
-        # print self.data["lecturer_lecture"][course]
-        #elif self.data["lecturer_lecture"][course] in [l for c,l in self.data["lecturer_lecture"][individual[idx]] if c != course]:
 
         if self_check == True:
             lecturers_in_slot = [l for c in individual[:,idx[1]] if c!=-1 and c!=course for l in self.data["lecturer_lecture"][c] ]
@@ -191,13 +266,6 @@ class FitnessFunctionTT(FitnessFunctionBase):
             return True
         else:
             return False
-
-
-        # we assume one lecturer per course with the 0 index
-        # if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
-        #     return True
-        # else:
-        #     return False
 
 
     def check_room_occupancy_constraint(self):
@@ -246,7 +314,6 @@ class FitnessFunctionTT(FitnessFunctionBase):
                 count = Counter(timeslot_courses)
                 count = [count[int(course[1:])] for course in courses]
                 if sum(count) > 1:
-                    # print "Curricula conflict"
                     indx = np.nonzero(count)[0][0]
                     room_idx = np.where(individual[:,timeslot] == int(courses[indx][1:]))[0][0]
 
@@ -254,26 +321,16 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def check_single_conflict(self, course, idx, individual, self_check=False):
-        # If given course is repeated in same timeslot or has other currical subs
-        # returns False
-        # print individual[:,idx[1]]
-        # if len([c for c in individual[:,idx[1]] if c == course])>0:
-            # return True
         if course == -1:
             return False
 
-
         course_conflicts = self.data["curric_conflict"][course]
         if self_check == True:
-            # print "should never be less than 1 ", [c for c in individual[:,idx[1]] if c in course_conflicts]
             if len([c for c in individual[:,idx[1]] if c in course_conflicts])>1:
                 return True
         else:
-            # print course_conflicts
             for c in individual[:,idx[1]]:
                 if c in course_conflicts:
-                    # print 'FUCKING TRUE'
-
                     return True
 
         return False
@@ -309,19 +366,10 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
     def check_single_availability(self, course, timeslot):
-        # Returns False if no problem
-        # print timeslot_tup
-        # print 'AVAILABILITY CHECK'
-        # print timeslot
-        # print course
-        # if course != -1:
-        #     print course, " ", self.data["unavailable_slots"][course]
-
         if course == -1:
             return False
 
         if timeslot in self.data["unavailable_slots"][course]:
-
             return True
         else:
             return False
