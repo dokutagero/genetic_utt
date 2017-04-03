@@ -3,6 +3,7 @@ path = "UniversityTimetablingCompetition/Test01/"
 
 def load(params):
 	data = {}
+	data["run_time"] = int(params[-1])
 	data["basics"] = (load_basics(params[0]))
 	data["courses"] = (load_courses(params[1]))
 	data["lecturers"] = (load_lecturers(params[2]))

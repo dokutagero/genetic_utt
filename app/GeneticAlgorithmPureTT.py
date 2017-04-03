@@ -3,6 +3,7 @@ import numpy as np
 import time
 from collections import Counter
 import FitnessFunctionTT as fftt
+import random
 
 class GeneticAlgorithmPureTT():
 
@@ -16,14 +17,29 @@ class GeneticAlgorithmPureTT():
         self.population = self.initialization(data["basics"]["rooms"],
                         data["basics"]["periods_per_day"] * data["basics"]["days"])
 
-        self.print_population()
+        # self.print_population()
+
+
+    def genetic_simulation(self):
+
+        # Population is already initialized from the constructor
+        init_time = time.time()
+        while ((time.time() - time_start) < self.data["run_time"]):
+            # Select 4 individuals
+            parent_candidates, replace_candidates = self.selection()
+            # Crossover individuals best pairs
+            # Mutate offspring
+            # Substitute 2 worst by 2 offspring
+
+
+        pass
 
 
     def initialization(self, num_rooms, timeslots):
         population = []
         finish_time = time.time() + 60*3
-
         time_start = time.time()
+
         iteration = 0
         # for i in range(self.population_size):
         while len(population) < self.population_size:
@@ -57,41 +73,41 @@ class GeneticAlgorithmPureTT():
         self.fitness_model.evaluate(individual)
         return population
 
-    def randomize_individual(self, individual):
-        start_time = time.time()
+    # def randomize_individual(self, individual):
+    #     start_time = time.time()
+    #
 
-
-        for i in range(individual.shape[0]):
-            for j in range(individual.shape[1]):
-                idx = (i,j)
-                if (
-                    self.fitness_model.check_single_conflict(individual[idx], idx, individual, self_check=True) or
-                    self.fitness_model.check_single_availability(individual[idx], j) or
-                    self.fitness_model.check_single_lecturer(individual[idx], idx, individual, self_check=True)
-                ):
-
-
-                    row = np.random.randint(0, individual.shape[0])
-                    col = np.random.randint(0, individual.shape[1])
-                    idx_conflict = idx
-                    while(
-                            self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual) or
-                            self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual) or
-                            self.fitness_model.check_single_availability(individual[idx_conflict], col) or
-                            self.fitness_model.check_single_availability(individual[(row,col)], idx_conflict[1]) or
-                            self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
-                            self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-                        ):
-                        if time.time() - start_time > 0.5:
-                            # print "discarded..", i, j
-                            return None
-
-                        row = np.random.randint(0, individual.shape[0])
-                        col = np.random.randint(0, individual.shape[1])
-
-                    individual = self.random_swap(idx_conflict, (row,col), individual)
-
-        return individual
+        # for i in range(individual.shape[0]):
+        #     for j in range(individual.shape[1]):
+        #         idx = (i,j)
+        #         if (
+        #             self.fitness_model.check_single_conflict(individual[idx], idx, individual, self_check=True) or
+        #             self.fitness_model.check_single_availability(individual[idx], j) or
+        #             self.fitness_model.check_single_lecturer(individual[idx], idx, individual, self_check=True)
+        #         ):
+        #
+        #
+        #             row = np.random.randint(0, individual.shape[0])
+        #             col = np.random.randint(0, individual.shape[1])
+        #             idx_conflict = idx
+        #             while(
+        #                     self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual) or
+        #                     self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual) or
+        #                     self.fitness_model.check_single_availability(individual[idx_conflict], col) or
+        #                     self.fitness_model.check_single_availability(individual[(row,col)], idx_conflict[1]) or
+        #                     self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
+        #                     self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
+        #                 ):
+        #                 if time.time() - start_time > 0.5:
+        #                     # print "discarded..", i, j
+        #                     return None
+        #
+        #                 row = np.random.randint(0, individual.shape[0])
+        #                 col = np.random.randint(0, individual.shape[1])
+        #
+        #             individual = self.random_swap(idx_conflict, (row,col), individual)
+        #
+        # return individual
 
 
     def evaluation(self, fitness_func):
@@ -100,8 +116,52 @@ class GeneticAlgorithmPureTT():
     def selection(self):
         pass
 
-    def recombination(self):
-        pass
+    def recombination(self, parent1, parent2):
+
+        # # Random cuts for columns
+        # col_cut1, col_cut2 = sorted(random.sample(range(parent1.shape[1]), 2))
+        # # Random cuts for rows
+        # row_cut1, row_cut2 = sorted(random.sample(range(parent1.shape[0]), 2))
+
+        row_cut1, row_cut2 = 2,3
+        col_cut1, col_cut2 = 4,7
+
+        print "Column cuts: ", col_cut1, col_cut2
+        print "Row cuts: ", row_cut1, row_cut2
+
+        offspring1 = np.copy(parent1)
+        offspring2 = np.copy(parent2)
+
+        offspring = [offspring1, offspring2]
+
+        for child, parent in zip(offspring, [parent2, parent1]):
+            for r in range(row_cut1, row_cut2 + 1):
+                for c in range(col_cut1, col_cut2 + 1):
+                    course2swap = parent[r,c]
+                    ind = np.where(child == course2swap)
+
+                    for r_prime, c_prime in zip(ind[0], ind[1]):
+                        if (
+                            self.fitness_model.check_single_conflict(child[r_prime, c_prime], (r, c), child, self_check=False) or
+                            self.fitness_model.check_single_conflict(child[r, c], (r_prime,c_prime), child, self_check=False) or
+                            self.fitness_model.check_single_availability(child[r,c], c_prime) or
+                            self.fitness_model.check_single_availability(child[r_prime, c_prime], c) or
+                            self.fitness_model.check_single_lecturer(child[r,c], (r_prime, c_prime), child, self_check=False) or
+                            self.fitness_model.check_single_lecturer(child[r_prime, c_prime], (r,c), child, self_check=False)
+                        ):
+                            continue
+                        else:
+                            child = self.random_swap((r,c), (r_prime, c_prime), child)
+                            break
+
+        return offspring
+
+
+
+
+
+
+
 
     def mutation(self):
         pass
@@ -118,6 +178,7 @@ class GeneticAlgorithmPureTT():
         individual[idx_conflict] = tmp
 
         return individual
+
 
 
 # TODO DO ONLY ALLOWED SWAPS -----------> Doesn't seem to work very well <-----------
@@ -206,14 +267,14 @@ class GeneticAlgorithmPureTT():
                     return (room_idx, timeslot)
 
 
-    def print_population(self):
-        with open('first_output.sol', 'w'): pass
+    def print_population(self, individual, filename='first_output.sol'):
+        with open(filename, 'w'): pass
         for course in self.data["courses"].keys():
-            course_room, course_tslots = np.where(self.population[0] == int(course[1:]))
+            course_room, course_tslots = np.where(individual == int(course[1:]))
             days = [day/self.data['basics']['periods_per_day'] for day in course_tslots]
             periods = [day%self.data['basics']['periods_per_day'] for day in course_tslots]
 
 
-            with open('first_output.sol', 'a') as outputfile:
+            with open(filename, 'a') as outputfile:
                 for day, period, room in zip(days, periods, course_room):
                     print >> outputfile, course, day, period, 'R'+'%04d' % room
