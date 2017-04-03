@@ -13,10 +13,17 @@ def load(params):
 	data["unavailability"] = (load_unavailability(params[6]))
 	text_to_int_courses(data)
 	unavailability_slots(data)
+	students_per_course(data)
 	curricula_conflicts(data)
 	lecturer_lectures(data)
 	course_curriculum(data)
 	return data
+
+def students_per_course(data):
+	data['students_per_course'] = {}
+	courses = data['courses']
+	for course in data["courses"].keys():
+		data["students_per_course"][int(course[1:])] = courses[course]['number_of_students']
 
 def text_to_int_courses(data):
 	data["course_int"] = {}

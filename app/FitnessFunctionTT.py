@@ -75,19 +75,14 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         penalty = 1
         value = 0
-
         all_rooms = self.data['rooms']
-        courses   = self.data['courses']
-        courses_names = self.data['course_str']
+        students_per_course = self.data['students_per_course']
 
-        for room in np.arange(len(individual[:,0])):
-            capacity = all_rooms[room]
-
-            for slot in np.arange(len(individual[0,:])):
+        for room in range(0, len(individual[:,0])):
+            for slot in range(0, len(individual[0,:])):
                 course = individual[room, slot]
                 if course != -1:
-                    number_of_students = courses[courses_names[course]]['number_of_students']
-                    value += max(0, number_of_students - capacity)
+                    value += max(0, students_per_course[course] - all_rooms[room])
 
         return value * penalty
 
@@ -114,19 +109,24 @@ class FitnessFunctionTT(FitnessFunctionBase):
         courses =  self.data['basics']['courses']
 
         scheduled = np.zeros((courses, working_days))
-        for slot in np.arange(len(individual[0,:])):
+        for slot in range(0, len(individual[0,:])):
             day = slot // periods_per_day
 
-            for room in np.arange(len(individual[:,0])):
+            for room in range(0, len(individual[:,0])):
                 course = individual[room, slot]
 
                 if course != -1:
                     scheduled[course, day] = 1
 
-        days_desired = dict((int(course[1:]), info["minimum_working_days"]) for (course,info) in self.data["courses"].iteritems())
+        courses = self.data["courses"]
+        days_desired = dict((int(course[1:]), info["minimum_working_days"]) for (course,info) in courses.iteritems())
+        values = sum(max(0, days_desired[key] - sum(scheduled[key,:])) for key in days_desired)
 
-        for key in days_desired:
-            value += max(0, days_desired[key] - sum(scheduled[key,:]))
+        # Actually slower than above
+        # values = 0
+        # for course, info in courses.iteritems():
+        #     values += max(0, info['minimum_working_days'] - sum(scheduled[course[1:],:]))
+
 
         return value * penalty
 
@@ -156,25 +156,25 @@ class FitnessFunctionTT(FitnessFunctionBase):
         no_rooms = len(individual[:,0])
 
         secluded = dict()
-        for i in np.arange(no_rooms):
-            for j in np.arange(no_ts):
+        for i in range(0, no_rooms):
+            for j in range(0, no_ts):
                 course = individual[i,j]
                 if course != -1:
                     curricula = self.data["course_curricula"][course]
-                    secluded[(i,j)] = {'curricula': copy.deepcopy(curricula), 'copy': copy.deepcopy(curricula)}
+                    secluded[(i,j)] = {'curricula': list(curricula), 'copy': curricula}
                 else:
                     secluded[(i,j)] = {'curricula': [], 'copy': []}
 
-        for slot in np.arange((no_ts-1)):
+        for slot in range(0, (no_ts-1)):
             if (slot // periods_per_day) == ((slot+1) // periods_per_day):
 
-                for i in np.arange(no_rooms):
+                for i in range(0, no_rooms):
                     course = individual[i,slot]
 
                     if course != -1:
                         curricula_copy = secluded[i,slot]['copy']
                         for curriculum in curricula_copy:
-                            for j in np.arange(no_rooms):
+                            for j in range(0, no_rooms):
                                 curricula_next_copy = secluded[j,(slot+1)]['copy']
 
                                 if curriculum in curricula_next_copy:
@@ -208,11 +208,11 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         penalty = 1
         value = 0
-        courses   = self.data['courses']
+        courses = self.data['courses']
         schedule = {}
 
-        for room in np.arange(len(individual[:,0])):
-            for slot in np.arange(len(individual[0,:])):
+        for room in range(0, len(individual[:,0])):
+            for slot in range(0, len(individual[0,:])):
                 course = individual[room, slot]
 
                 if course != -1:
@@ -223,7 +223,6 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         value = sum([(len(np.unique(rooms))-1) for rooms in schedule.values()])
         return value * penalty
-
 
 
     def check_lectures_constraint(self):
@@ -303,10 +302,11 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
                             None:    If there is no conflict in the individual.
         """
+        relations = self.data["relations"]
         for timeslot in range(individual.shape[1]):
             timeslot_courses = individual[:,timeslot]
 
-            for curriculum, courses in self.data["relations"].iteritems():
+            for curriculum, courses in relations.iteritems():
                 count = Counter(timeslot_courses)
                 count = [count[int(course[1:])] for course in courses]
                 if sum(count) > 1:
@@ -349,12 +349,13 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
                             None:    If there is no conflict in the individual.
         """
+        periods_per_day = self.data["basics"]["periods_per_day"]
 
         for course, constraints in self.data["unavailability"].iteritems():
             course_no = int(course[1:])
             for timeslot_tuple in zip(constraints["day"], constraints["period"]):
                 # self.check_single_availability(course, timeslot_tuple, individual)
-                conflict_timeslot = (self.data["basics"]["periods_per_day"])*timeslot_tuple[0]+timeslot_tuple[1]
+                conflict_timeslot = periods_per_day*timeslot_tuple[0]+timeslot_tuple[1]
                 if course_no in individual[:,conflict_timeslot]:
                     # print "Unavailability conflict"
                     room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]

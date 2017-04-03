@@ -47,7 +47,6 @@ class GeneticAlgorithmPureTT():
 
     def initialization(self, num_rooms, timeslots):
         population = []
-        finish_time = time.time() + 60*3
         time_start = time.time()
 
         iteration = 0
@@ -80,44 +79,8 @@ class GeneticAlgorithmPureTT():
 
             population.append(individual)
         print time.time()-time_start
-        self.fitness_model.evaluate(individual)
+
         return population
-
-    # def randomize_individual(self, individual):
-    #     start_time = time.time()
-    #
-
-        # for i in range(individual.shape[0]):
-        #     for j in range(individual.shape[1]):
-        #         idx = (i,j)
-        #         if (
-        #             self.fitness_model.check_single_conflict(individual[idx], idx, individual, self_check=True) or
-        #             self.fitness_model.check_single_availability(individual[idx], j) or
-        #             self.fitness_model.check_single_lecturer(individual[idx], idx, individual, self_check=True)
-        #         ):
-        #
-        #
-        #             row = np.random.randint(0, individual.shape[0])
-        #             col = np.random.randint(0, individual.shape[1])
-        #             idx_conflict = idx
-        #             while(
-        #                     self.fitness_model.check_single_conflict(individual[idx_conflict],(row,col), individual) or
-        #                     self.fitness_model.check_single_conflict(individual[(row,col)], idx_conflict, individual) or
-        #                     self.fitness_model.check_single_availability(individual[idx_conflict], col) or
-        #                     self.fitness_model.check_single_availability(individual[(row,col)], idx_conflict[1]) or
-        #                     self.fitness_model.check_single_lecturer(individual[idx_conflict], (row,col), individual) or
-        #                     self.fitness_model.check_single_lecturer(individual[(row,col)], idx_conflict, individual)
-        #                 ):
-        #                 if time.time() - start_time > 0.5:
-        #                     # print "discarded..", i, j
-        #                     return None
-        #
-        #                 row = np.random.randint(0, individual.shape[0])
-        #                 col = np.random.randint(0, individual.shape[1])
-        #
-        #             individual = self.random_swap(idx_conflict, (row,col), individual)
-        #
-        # return individual
 
 
     def evaluation(self, individual):
@@ -125,11 +88,9 @@ class GeneticAlgorithmPureTT():
 
 
     def selection(self, best_selection=True):
-
         individual_indices = np.random.choice(range(len(self.population)), size=4, replace=False)
-
-        # fitness_values = [self.evaluation(individual) for idx in individual_indices for individual in self.population[idx]]
         fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
+
         if best_selection:
             return (individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
                     individual_indices[fitness_values.index(min(fitness_values[2], fitness_values[3]))])
@@ -137,9 +98,6 @@ class GeneticAlgorithmPureTT():
             return (individual_indices[fitness_values.index(max(fitness_values[0], fitness_values[1]))],
                     individual_indices[fitness_values.index(max(fitness_values[2], fitness_values[3]))])
 
-
-
-        # pass
 
     def recombination(self, parent1, parent2):
 
@@ -149,7 +107,7 @@ class GeneticAlgorithmPureTT():
         # row_cut1, row_cut2 = sorted(random.sample(range(parent1.shape[0]), 2))
         parent1 = self.population[parent1]
         parent2 = self.population[parent2]
-        # print parent1
+
         row_cut1, row_cut2 = np.random.choice(range(parent1.shape[0]), size=2)
         col_cut1, col_cut2 = np.random.choice(range(parent1.shape[1]), size=2)
 
@@ -191,7 +149,6 @@ class GeneticAlgorithmPureTT():
 
 
     def mutation(self, offspring):
-        mutated_offspring = []
         for child in offspring:
             probability_matrix = np.random.rand(child.shape[0], child.shape[1])
             mutation_idcs = np.where(probability_matrix <= self.mutation_prob)
@@ -207,11 +164,8 @@ class GeneticAlgorithmPureTT():
                     self.fitness_model.check_single_lecturer(child[room, ts], (row,col), child, self_check=False)
                 ):
                     continue
-                # print 'MUTATED INDICES'
-                # print room,ts
-                # print row,col
+
                 child = self.random_swap((room, ts), (row, col), child)
-            # mutated_offspring.append(child)
 
         return offspring
 
@@ -312,7 +266,6 @@ class GeneticAlgorithmPureTT():
                 count = [count[course] for course in courses]
 
                 if sum(count) > 1:
-                    # print "Lecturer conflict"
                     indx = np.nonzero(count)[0][0]
                     room_idx = np.where(individual[:,timeslot] == courses[indx])[0][0]
 
