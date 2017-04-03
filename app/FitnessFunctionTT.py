@@ -3,6 +3,8 @@ from collections import Counter
 import numpy as np
 from scipy.stats import itemfreq
 import pandas as pd
+import copy
+
 class FitnessFunctionTT(FitnessFunctionBase):
 
     def __init__(self, data):
@@ -36,7 +38,9 @@ class FitnessFunctionTT(FitnessFunctionBase):
         occurrences_desired   = dict((int(course[1:]), info["number_of_lectures"]) for (course,info) in self.data["courses"].iteritems())
 
         for key in occurrences_desired:
-            value += occurrences_desired[key] - occurrences_scheduled[key]
+            value += occurrences_desired[key]
+            if key in occurrences_scheduled:
+                value -= occurrences_scheduled[key]
 
         return value * penalty
 
@@ -86,36 +90,39 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
     def compactness_penalty(self, individual):
         penalty = 2
-        value = 0
         periods_per_day = self.data['basics']['periods_per_day']
 
-        secluded = np.ones( (len(individual[:,0]), len(individual[0,])) )
+        secluded = dict()
+        for i in np.arange(len(individual[:,0])):
+            for j in np.arange(len(individual[0,:])):
+                course = individual[i,j]
+                if course != -1:
+                    curricula = self.data["course_curricula"][course]
+                    secluded[(i,j)] = {'curricula': copy.deepcopy(curricula), 'copy': copy.deepcopy(curricula)}
+                else:
+                    secluded[(i,j)] = {'curricula': [], 'copy': []}
+
         for slot in np.arange((len(individual[0,:])-1)):
             if (slot // periods_per_day) == ((slot+1) // periods_per_day):
-                next_slot = {}
-
-                for i in np.arange(len(individual[:,0])):
-                    course = individual[i,(slot+1)]
-                    if course != -1:
-                        courses = self.data['curric_conflict'][course]
-
-                        for c in courses:
-                            if next_slot.has_key(c):
-                                tmpIndex = next_slot[c]['indices']
-                                tmpIndex.append(i)
-                                tmpCourses = next_slot[c]['curriculum_courses'].union(courses)
-                                next_slot[c] = {'indices': tmpIndex, 'curriculum_courses':tmpCourses}
-                            else:
-                                next_slot[c] = {'indices':[i], 'curriculum_courses': courses}
 
                 for i in np.arange(len(individual[:,0])):
                     course = individual[i,slot]
-                    if course != -1 and next_slot.has_key(course):
-                        secluded[i,slot] = 0
-                        for j in next_slot[course]['indices']:
-                            secluded[j,(slot+1)] = 0
 
-        value = sum(sum(secluded))
+                    if course != -1:
+                        curricula_copy = secluded[i,slot]['copy']
+                        curricula_working = secluded[i,slot]['curricula']
+                        for curriculum in curricula_copy:
+                            for j in np.arange(len(individual[:,0])):
+                                curricula_next_copy = secluded[j,(slot+1)]['copy']
+                                curricula_next_working = secluded[j,(slot+1)]['curricula']
+
+                                if curriculum in curricula_next_copy:
+                                    if curriculum in curricula_working:
+                                        secluded[i,slot]['curricula'].remove(curriculum)
+                                    if curriculum in curricula_next_working:
+                                        secluded[j,(slot+1)]['curricula'].remove(curriculum)
+
+        value = sum([len(curricula['curricula']) for curricula in secluded.values()])
 
         return value * penalty
 

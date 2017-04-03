@@ -14,6 +14,7 @@ def load(params):
 	unavailability_slots(data)
 	curricula_conflicts(data)
 	lecturer_lectures(data)
+	course_curriculum(data)
 	return data
 
 def text_to_int_courses(data):
@@ -43,6 +44,17 @@ def curricula_conflicts(data):
 			else:
 				data["curric_conflict"][int(course[1:])] = set([int(c[1:]) for c in courses])
 
+def course_curriculum(data):
+	data["course_curricula"] = {}
+	for curriculum, courses in data["relations"].iteritems():
+		curriculum = int(curriculum[1:])
+
+		for course in courses:
+			course = int(course[1:])
+			if data["course_curricula"].has_key(course):
+				data["course_curricula"][course].append(curriculum)
+			else:
+				data["course_curricula"][course] = [curriculum]
 
 def lecturer_lectures(data):
 	data["lecturer_lecture"] = {}
