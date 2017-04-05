@@ -148,7 +148,7 @@ def load_curriculas(file_name):
 		csv_reader.next()
 		for line in csv_reader:
 			curriculum, number_of_course = line
-			data[curriculum] = number_of_course
+			data[curriculum] = int(number_of_course)
 
 	return data
 
