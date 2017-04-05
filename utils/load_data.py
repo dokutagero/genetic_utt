@@ -1,7 +1,10 @@
 import csv
-path = "UniversityTimetablingCompetition/Test01/"
+directory = "UniversityTimetablingCompetition"
 
-def load(params):
+def load(params, index=1):
+	index = '%02d' % index
+	global path
+	path = directory + '/Test' + index + '/'
 	data = {}
 	data["run_time"] = int(params[-1])
 	data["basics"] = (load_basics(params[0]))
