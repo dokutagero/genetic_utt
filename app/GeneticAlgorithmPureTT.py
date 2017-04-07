@@ -26,8 +26,8 @@ class GeneticAlgorithmPureTT():
         init_time = time.time()
         best_individual = self.fitness_model.get_best(self.population)
         iteration = 0
-        print 'Best individual iteration ', iteration
-        print self.fitness_model.evaluate(self.population[best_individual])
+        # print 'Best individual iteration ', iteration
+        print iteration,'\t',self.fitness_model.evaluate(self.population[best_individual])
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
@@ -39,8 +39,10 @@ class GeneticAlgorithmPureTT():
             self.population[w2] = o2_prime
 
             iteration += 1
-        print 'Best individual iteration ', iteration
-        print self.fitness_model.evaluate(self.population[best_individual])
+
+            if iteration % 50 == 0 :
+                # print 'Best individual iteration ', iteration
+                print iteration,'\t',self.fitness_model.evaluate(self.population[best_individual])
 
 
 
@@ -78,7 +80,7 @@ class GeneticAlgorithmPureTT():
                             individual[ind] = course_id
 
             population.append(individual)
-        print time.time()-time_start
+        # print time.time()-time_start
 
         return population
 
