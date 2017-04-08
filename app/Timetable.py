@@ -44,7 +44,7 @@ class Timetable(object):
         self.course_positions[course].append(position)
 
         if init:
-            self._delta_eval(pos_1, pos_2)
+            delta = self._delta_eval(pos_1, pos_2)
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
@@ -54,7 +54,7 @@ class Timetable(object):
         delta.append(self._min_days_delta())
         delta.append(self._room_delta())
 
-        self.score += delta
+        return sum(delta)
 
 
     def swap_courses(self, pos_1, pos_2):
@@ -92,8 +92,23 @@ class Timetable(object):
     def _compactness_delta(self):
         pass
 
-    def _min_days_delta(self):
-        pass
+    def _room_delta(self, pos_1, pos_2):
+        course_1 = self.schedule[pos_1]
+        course_2 = self.schedule[pos_2]
+
+        num_rooms_before = len(set([pos[0] for pos in self.course_positions[course_1]])) + len(set([pos[0] for pos in self.course_positions[course_2]]))
+
+        coures_1_positions = list(self.course_positions[coures_1])
+        coures_2_positions = list(self.course_positions[coures_2])
+
+        coures_1_positions.remove(pos_1)
+        coures_1_positions.append(pos_2)
+        coures_2_positions.remove(pos_2)
+        coures_2_positions.append(pos_1)
+
+        num_rooms_after = len(set([pos[0] for pos in coures_1_positions])) + len(set([pos[0] for pos in coures_2_positions]))
+
+        return num_rooms_after - num_rooms_before
 
     def _capacity_delta(self):
         pass
