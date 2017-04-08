@@ -52,7 +52,7 @@ class Timetable(object):
         delta.append(self._capacity_delta())
         delta.append(self._compactness_delta())
         delta.append(self._min_days_delta())
-        delta.append(self._room_delta())
+        delta.append(self._room_delta(pos_1, pos_2))
 
         return sum(delta)
 

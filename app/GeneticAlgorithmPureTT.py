@@ -29,7 +29,7 @@ class GeneticAlgorithmPureTT():
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
-            o1, o2 = self.recombination(p1,p2)
+            o1, o2 = self.recombination(self.population[p1], self.population[p2])
             o1_prime, o2_prime = self.mutation((o1, o2))
             # Select 4 individuals and return worst of pairs
             w1, w2 = self.selection(best_selection=False)
@@ -70,12 +70,7 @@ class GeneticAlgorithmPureTT():
                     individual_indices[fitness_values.index(max(fitness_values[2], fitness_values[3]))])
 
 
-    def recombination(self, parent1, parent2):
-
-        Parent1 = self.population[parent1]
-        Parent2 = self.population[parent2]
-
-
+    def recombination(self, Parent1, Parent2):
         # We obtain the random 2D cuts for each parent.
         row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
         col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
@@ -91,8 +86,8 @@ class GeneticAlgorithmPureTT():
         for child, parent in zip(offspring, [Parent2, Parent1]):
             for r in range(row_cut1, row_cut2 + 1):
                 for c in range(col_cut1, col_cut2 + 1):
-                    parent_course2swap = parent[r,c]
-                    child_course2swap = child[r,c]
+                    parent_course2swap = parent.schedule[r,c]
+                    child_course2swap = child.schedule[r,c]
 
                     idcs_child_candidates = child.course_positions[parent_course2swap]
                     # If there are scheduled courses.
@@ -138,35 +133,28 @@ class GeneticAlgorithmPureTT():
         return offspring
 
 
-
-
-
-
-
-
-    def mutation(self, offspring):
-        for child in offspring:
+    def mutation(self, Offspring):
+        for Child in Offspring:
+            child = Child.schedule
             probability_matrix = np.random.rand(child.shape[0], child.shape[1])
             mutation_idcs = np.where(probability_matrix <= self.mutation_prob)
             for room, ts in zip(mutation_idcs[0], mutation_idcs[1]):
                 row = np.random.randint(0, child.shape[0])
                 col = np.random.randint(0, child.shape[1])
                 if (
-                    self.fitness_model.check_single_conflict(child[room,ts], (row,col), child, self_check=False) or
-                    self.fitness_model.check_single_conflict(child[row, col], (room, ts), child, self_check=False) or
-                    self.fitness_model.check_single_availability(child[row,col], ts) or
-                    self.fitness_model.check_single_availability(child[room, ts], col) or
-                    self.fitness_model.check_single_lecturer(child[row,col], (room, ts), child, self_check=False) or
-                    self.fitness_model.check_single_lecturer(child[room, ts], (row,col), child, self_check=False)
+                    Child.check_single_conflict((room,ts), (row,col), self_check=False) or
+                    Child.check_single_conflict((row, col), (room, ts), self_check=False) or
+                    Child.check_single_availability((row,col), ts) or
+                    Child.check_single_availability((room, ts), col) or
+                    Child.check_single_lecturer((row,col), (room, ts), self_check=False) or
+                    Child.check_single_lecturer((room, ts), (row,col), self_check=False)
                 ):
                     continue
 
-                child = self.random_swap((room, ts), (row, col), child)
+                Child.swap_courses((room, ts), (row, col))
 
-        return offspring
+        return Offspring
 
-
-        pass
 
     def replacement(self):
         pass
