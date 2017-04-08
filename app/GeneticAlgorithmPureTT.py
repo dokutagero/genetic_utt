@@ -6,6 +6,7 @@ import FitnessFunctionTT as fftt
 import random
 from Timetable import Timetable
 import pdb
+import copy
 
 class GeneticAlgorithmPureTT():
 
@@ -74,16 +75,45 @@ class GeneticAlgorithmPureTT():
         Parent1 = self.population[parent1]
         Parent2 = self.population[parent2]
 
-        parent1 = Parent1.schedule
-        parent2 = Parent2.schedule
 
-        row_cut1, row_cut2 = np.random.choice(range(parent1.shape[0]), size=2)
-        col_cut1, col_cut2 = np.random.choice(range(parent1.shape[1]), size=2)
+        # We obtain the random 2D cuts for each parent.
+        row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
+        col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
 
-        offspring1 = np.copy(parent1)
-        offspring2 = np.copy(parent2)
+        # Before performing the PMX crossover, the offspring is equal to the parents.
+        offspring1 = copy.deepcopy(Parent1)
+        offspring2 = copy.deepcopy(Parent2)
 
         offspring = [offspring1, offspring2]
+
+        # offspring1 is copy of Parent2 and offspring2 is copy of Parent1
+        # This is the reason of having them in opposite orders in the next for.
+        for child, parent in zip(offspring, [Parent2, Parent1]):
+            for r in range(row_cut1, row_cut2 + 1):
+                for c in range(col_cut1, col_cut2 + 1):
+                    parent_course2swap = parent[r,c]
+                    child_course2swap = child[r,c]
+
+                    idcs_child_candidates = child.course_positions[parent_course2swap]
+                    # If there are scheduled courses.
+                    if idcs_child_candidates:
+                        for position, idx_candidate in enumerate(idcs_child_candidates):
+                            if(
+                            child.check_single_conflict(idx_candidate, (r, c), self_check=False) or
+                            child.check_single_conflict((r, c), idx_candidate, self_check=False) or
+                            child.check_single_availability((r,c), idx_candidate[1]) or
+                            child.check_single_availability(idx_candidate, c) or
+                            child.check_single_lecturer((r,c), idx_candidate, self_check=False) or
+                            child.check_single_lecturer(idx_candidate, (r,c), self_check=False)
+                            ):
+                                # If we can't swap it with the first candidate,
+                                # we check the next one.
+                                continue
+                            else:
+                                child.swap_courses(idx_candidate, (r,c))
+
+
+        return offspring
 
         # for child, parent in zip(offspring, [parent2, parent1]):
         #     for r in range(row_cut1, row_cut2 + 1):
