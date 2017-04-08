@@ -49,7 +49,7 @@ class Timetable(object):
     def _delta_eval(self, pos_1, pos_2):
         delta = []
         delta.append(self._unscheduled_delta())
-        delta.append(self._capacity_delta())
+        delta.append(self._capacity_delta(pos_1, pos_2))
         delta.append(self._compactness_delta())
         delta.append(self._min_days_delta())
         delta.append(self._room_delta(pos_1, pos_2))
@@ -83,8 +83,17 @@ class Timetable(object):
 
         self.score = sum(penalty)
 
-    def _capacity_delta(self):
-        pass
+    def _capacity_delta(self, pos_1, pos_2):
+        capacity_1 = self.data['rooms'][pos_1[0]]
+        capacity_2 = self.data['rooms'][pos_2[0]]
+
+        students_per_course_1 = self.data['students_per_course'][self.schedule[pos_1]]
+        students_per_course_2 = self.data['students_per_course'][self.schedule[pos_2]]
+
+        before = max(0, students_per_course_1 - capacity_1) + max(0, students_per_course_2 - capacity_2)
+        after  = max(0, students_per_course_2 - capacity_1) + max(0, students_per_course_1 - capacity_2)
+
+        return after - before
 
     def _min_days_delta(self):
         pass
