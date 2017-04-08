@@ -1,37 +1,80 @@
-from FitnessFunctionBase import FitnessFunctionBase
-from collections import Counter
 import numpy as np
-from scipy.stats import itemfreq
-import pandas as pd
-import copy
-import operator
-from functools import reduce
 
-class FitnessFunctionTT(FitnessFunctionBase):
+class Timetable(object):
 
     def __init__(self, data):
-        super(FitnessFunctionTT, self).__init__(data)
+        self.data = data
+        self.unscheduled = []
+        self.score = -1
+        self.schedule = np.zeros(shape=(data["basics"]["rooms"], data["basics"]["periods_per_day"] * data["basics"]["days"]), dtype=np.int8) - 1
+        self.course_positions = dict((int(course[1:]),[]) for course in data["courses"].keys())
 
-    def evaluate(self, individual):
-        penalty = []
-        penalty.append(self.unscheduled_penalty(individual))
-        penalty.append(self.capacity_penalty(individual))
-        penalty.append(self.min_days_penalty(individual))
-        penalty.append(self.compactness_penalty(individual))
-        penalty.append(self.room_penalty(individual))
+        idcs = [idcs for idcs, val in np.ndenumerate(self.schedule)]
+        np.random.shuffle(idcs)
 
-        for name, p in zip(["unscheduled", "capacity", "min_days", "compactness", "room"], penalty):
-            print name, ':', p
+        for course, course_info in self.data["courses"].iteritems():
+            for num_lecture in range(course_info["number_of_lectures"]):
+                scheduled = False
+                i = 0
 
-        return sum(penalty)
+                while not scheduled:
+                    ind = idcs.pop(0)
+                    course_id = int(course[1:])
 
-    def check_hard_constraints(self):
+                    if i == len(idcs):
+                        self.unscheduled.append(course_id)
+                        break
+
+                    if (
+                        self.check_single_conflict(course_id, ind, self_check=False) or
+                        self.check_single_availability(course_id, ind[1]) or
+                        self.check_single_lecturer(course_id, ind, self_check=False)
+                    ):
+                        idcs.append(ind)
+                        i += 1
+                    else:
+                        scheduled = True
+                        self.insert_course(ind, course_id)
+
+
+    def insert_course(self, position, course):
+        self.schedule[position] = course
+        self.course_positions[course].append(position)
+
+
+    def swap_courses(self, pos_1, pos_2):
+
+                # if old_course != -1:
+                #     self.course_positions[old_course].remove(position)
         pass
 
-    def check_soft_constraints(self):
+
+    def check_feasibility(self):
         pass
 
-    def unscheduled_penalty(self, individual):
+    def _calc_score_all(self):
+        pass
+
+    def _delta_eval_room_capacity(self):
+        pass
+
+    def _delta_eval_room_stability(self):
+        pass
+
+    def _delta_eval_compactness(self):
+        pass
+
+    def _delta_eval_min_working_days(self):
+        pass
+
+    def _delta_eval_room_capacity(self):
+        pass
+
+    def _delta_eval_unscheduled(self):
+        pass
+
+
+    def _unscheduled_penalty(self):
         """
         Each course has a predetermined amount of lectures that must
         be given. As many of these lectures as possible must be sched-
@@ -48,6 +91,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
             penalty:   The penalty for not scheduling all the lectures for some courses
         """
 
+        individual = self.schedule
         penalty = 10
         value = 0
 
@@ -61,7 +105,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         return value * penalty
 
-    def capacity_penalty(self, individual):
+    def _capacity_penalty(self):
         """
         For each lecture, the number of students that attend the course
         must be less or equal than the number of seats of all the rooms
@@ -78,6 +122,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
             penalty:   The penalty for scheduling lectures in not big enough rooms
         """
 
+        individual = self.schedule
         penalty = 1
         value = 0
         all_rooms = self.data['rooms']
@@ -91,7 +136,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         return value * penalty
 
-    def min_days_penalty(self, individual):
+    def _min_days_penalty(self):
         """
         The lectures of each course must be spread into a given minimum
         number of days. Each day below the minimum counts as 5 points
@@ -106,6 +151,8 @@ class FitnessFunctionTT(FitnessFunctionBase):
         Returns:
             penalty:   The penalty for not spreading the course over minimum number of days
         """
+
+        individual = self.schedule
 
         penalty = 5
         value = 0
@@ -125,7 +172,6 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         courses = self.data["courses"]
         days_desired = dict((int(course[1:]), info["minimum_working_days"]) for (course,info) in courses.iteritems())
-
         for key in days_desired:
             value += max(0, days_desired[key] - sum(scheduled[key,:]))
 
@@ -137,7 +183,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
         return value * penalty
 
 
-    def compactness_penalty(self, individual):
+    def _compactness_penalty(self):
         """
         Lectures belonging to a curriculum should be adjacent to each
         other (i.e., in consecutive time slots). For a given curriculum we
@@ -156,6 +202,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
             penalty:   The penalty for not having compactness for courses in curricula
         """
 
+        individual = self.schedule
         penalty = 2
 
         periods_per_day = self.data['basics']['periods_per_day']
@@ -234,7 +281,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
 
 
-    def room_penalty(self, individual):
+    def _room_penalty(self):
         """
         All lectures of a course should be given in the same room. Each
         distinct room used for the lectures of a course, but the intrst, counts
@@ -250,6 +297,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
             penalty:   The penalty for using more than one room per course
         """
 
+        individual = self.schedule
         penalty = 1
         value = 0
         courses = self.data['courses']
@@ -269,30 +317,9 @@ class FitnessFunctionTT(FitnessFunctionBase):
         return value * penalty
 
 
-    def check_lectures_constraint(self):
-        """
-        Each course has a predetermined amount of lectures. Each lecture must be
-        scheduled in distinct time slots and the total number of lectures cannot
-        be exceeded.
+    def check_single_lecturer(self, course, idx, self_check=False):
+        individual = self.schedule
 
-        A whole individual is checked in order to determine if the condition
-        stated above is fulfilled. In case that a gene of the individual
-        violates such condition, the index is returned.
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            (row(int), col(int)):   Indices of the conflict in the individual if
-                                    constraint is violated.
-
-                            None:    If there is no conflict in the individual.
-        """
-        pass
-
-
-    def check_single_lecturer(self,course, idx, individual, self_check=False):
         if course == -1:
             return False
 
@@ -307,27 +334,8 @@ class FitnessFunctionTT(FitnessFunctionBase):
             return False
 
 
-    def check_room_occupancy_constraint(self):
-        """
-        Two lectures cannot take place in the same room in the same time slot.
 
-        A whole individual is checked in order to determine if the condition
-        stated above is fulfilled. In case that a gene of the individual
-        violates such condition, the index is returned.
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            (row(int), col(int)):   Indices of the conflict in the individual if
-                                    constraint is violated.
-
-                            None:    If there is no conflict in the individual.
-        """
-        pass
-
-    def check_conflicts_constraint(self, individual):
+    def check_conflicts_constraint(self):
         """
         Lectures of courses in the same curriculum or taught by the same
         lecturer must all be scheduled in different time slots.
@@ -346,6 +354,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
                             None:    If there is no conflict in the individual.
         """
+        individual = self.schedule
         relations = self.data["relations"]
         for timeslot in range(individual.shape[1]):
             timeslot_courses = individual[:,timeslot]
@@ -360,7 +369,9 @@ class FitnessFunctionTT(FitnessFunctionBase):
                     return (room_idx, timeslot)
 
 
-    def check_single_conflict(self, course, idx, individual, self_check=False):
+    def check_single_conflict(self, course, idx, self_check=False):
+        individual = self.schedule
+
         if course == -1:
             return False
 
@@ -375,7 +386,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
         return False
 
-    def check_availability_constraint(self, individual):
+    def check_availability_constraint(self):
         """
         Some courses cannot be scheduled at specific time slots.
 
@@ -393,6 +404,7 @@ class FitnessFunctionTT(FitnessFunctionBase):
 
                             None:    If there is no conflict in the individual.
         """
+        individual = self.schedule
         periods_per_day = self.data["basics"]["periods_per_day"]
 
         for course, constraints in self.data["unavailability"].iteritems():
@@ -414,8 +426,3 @@ class FitnessFunctionTT(FitnessFunctionBase):
             return True
         else:
             return False
-
-
-    def get_best(self, population):
-        fitness_values = [self.evaluate(individual) for individual in population]
-        return fitness_values.index(min(fitness_values))

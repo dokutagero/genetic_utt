@@ -1,7 +1,10 @@
 import csv
-path = "UniversityTimetablingCompetition/Test01/"
+directory = "UniversityTimetablingCompetition"
 
-def load(params):
+def load(params, index=1):
+	index = '%02d' % index
+	global path
+	path = directory + '/Test' + index + '/'
 	data = {}
 	data["run_time"] = int(params[-1])
 	data["basics"] = (load_basics(params[0]))
@@ -148,7 +151,7 @@ def load_curriculas(file_name):
 		csv_reader.next()
 		for line in csv_reader:
 			curriculum, number_of_course = line
-			data[curriculum] = number_of_course
+			data[curriculum] = int(number_of_course)
 
 	return data
 
