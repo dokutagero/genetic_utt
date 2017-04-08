@@ -110,28 +110,6 @@ class GeneticAlgorithmPureTT():
 
         return offspring
 
-        # for child, parent in zip(offspring, [parent2, parent1]):
-        #     for r in range(row_cut1, row_cut2 + 1):
-        #         for c in range(col_cut1, col_cut2 + 1):
-        #             course2swap = parent[r,c]
-        #             ind = np.where(child == course2swap)
-        #
-        #             for r_prime, c_prime in zip(ind[0], ind[1]):
-        #                 if (
-        #                     self.fitness_model.check_single_conflict(child[r_prime, c_prime], (r, c), child, self_check=False) or
-        #                     self.fitness_model.check_single_conflict(child[r, c], (r_prime,c_prime), child, self_check=False) or
-        #                     self.fitness_model.check_single_availability(child[r,c], c_prime) or
-        #                     self.fitness_model.check_single_availability(child[r_prime, c_prime], c) or
-        #                     self.fitness_model.check_single_lecturer(child[r,c], (r_prime, c_prime), child, self_check=False) or
-        #                     self.fitness_model.check_single_lecturer(child[r_prime, c_prime], (r,c), child, self_check=False)
-        #                 ):
-        #                     continue
-        #                 else:
-        #                     child = self.random_swap((r,c), (r_prime, c_prime), child)
-        #                     break
-        #
-        return offspring
-
 
     def mutation(self, Offspring):
         for Child in Offspring:
@@ -158,102 +136,6 @@ class GeneticAlgorithmPureTT():
 
     def replacement(self):
         pass
-
-    def random_swap(self, idx_conflict, idx_swap, individual):
-        #row = np.random.randint(0, individual.shape[0])
-        #col = np.random.randint(0, individual.shape[1])
-
-        tmp = individual[idx_swap]
-        individual[idx_swap] = individual[idx_conflict]
-        individual[idx_conflict] = tmp
-
-        return individual
-
-
-
-# TODO DO ONLY ALLOWED SWAPS -----------> Doesn't seem to work very well <-----------
-        # row = np.random.randint(0, individual.shape[0])
-        # col = np.random.randint(0, individual.shape[1])
-        #
-        # copy = deepcopy(individual)
-        # copy[(row,col)] = individual[idx_conflict]
-        # copy[idx_conflict] = individual[(row,col)]
-        #
-        # idx_conflict = self.test_feasibility(copy)
-        # while idx_conflict is not None:
-        #     row = np.random.randint(0, individual.shape[0])
-        #     col = np.random.randint(0, individual.shape[1])
-        #
-        #     copy = deepcopy(individual)
-        #     copy[(row,col)] = individual[idx_conflict]
-        #     copy[idx_conflict] = individual[(row,col)]
-        #     idx_conflict = self.test_feasibility(copy)
-        #
-        # individual[(row,col)] = copy[idx_conflict]
-        # individual[idx_conflict] = copy[(row,col)]
-        #
-        # return individual
-
-
-
-    def test_feasibility(self, individual):
-
-
-        res = self.fitness_model.check_availability_constraint(individual)
-        if res is not None:
-            return res
-        # # Unavailability
-        # for course, constraints in self.data["unavailability"].iteritems():
-        #     course_no = int(course[1:])
-        #     for idx in zip(constraints["day"], constraints["period"]):
-        #         conflict_timeslot = (self.data["basics"]["periods_per_day"])*idx[0]+idx[1]
-        #         if course_no in individual[:,conflict_timeslot]:
-        #             # print "Unavailability conflict"
-        #             room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]
-        #             return (room_idx, conflict_timeslot)
-
-
-        res = self.fitness_model.check_conflicts_constraint(individual)
-        if res is not None:
-            return res
-        # # Curricula
-        # for timeslot in range(individual.shape[1]):
-        #     timeslot_courses = individual[:,timeslot]
-        #
-        #     for curriculum, courses in self.data["relations"].iteritems():
-        #         count = Counter(timeslot_courses)
-        #         count = [count[int(course[1:])] for course in courses]
-        #         if sum(count) > 1:
-        #             # print "Curricula conflict"
-        #             indx = np.nonzero(count)[0][0]
-        #             room_idx = np.where(individual[:,timeslot] == int(courses[indx][1:]))[0][0]
-        #
-        #             return (room_idx, timeslot)
-
-
-        # lecturers
-        lecturers_courses = {}
-
-        for course, info in self.data["courses"].iteritems():
-            lecturer = info["lecturer"]
-
-            if lecturer in lecturers_courses:
-                lecturers_courses[lecturer].append(int(course[1:]))
-            else:
-                lecturers_courses[lecturer] = [int(course[1:])]
-
-        for timeslot in range(individual.shape[1]):
-            timeslot_courses = individual[:,timeslot]
-
-            for lecturer, courses in lecturers_courses.iteritems():
-                count = Counter(timeslot_courses)
-                count = [count[course] for course in courses]
-
-                if sum(count) > 1:
-                    indx = np.nonzero(count)[0][0]
-                    room_idx = np.where(individual[:,timeslot] == courses[indx])[0][0]
-
-                    return (room_idx, timeslot)
 
 
     def print_population(self, individual, filename='first_output.sol'):
