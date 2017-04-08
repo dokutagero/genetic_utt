@@ -48,10 +48,9 @@ class Timetable(object):
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
-        delta.append(self._unscheduled_delta())
         delta.append(self._capacity_delta(pos_1, pos_2))
-        delta.append(self._compactness_delta())
-        delta.append(self._min_days_delta())
+        delta.append(self._compactness_delta(pos_1, pos_2))
+        delta.append(self._min_days_delta(pos_1, pos_2))
         delta.append(self._room_delta(pos_1, pos_2))
 
         return sum(delta)
@@ -83,6 +82,7 @@ class Timetable(object):
 
         self.score = sum(penalty)
 
+
     def _capacity_delta(self, pos_1, pos_2):
         capacity_1 = self.data['rooms'][pos_1[0]]
         capacity_2 = self.data['rooms'][pos_2[0]]
@@ -95,11 +95,34 @@ class Timetable(object):
 
         return after - before
 
-    def _min_days_delta(self):
-        pass
+
+    def _min_days_delta(self, pos_1, pos_2):
+        penalty = 5
+        periods_per_day = self.data['basics']['periods_per_day']
+
+        course_1 = self.schedule[pos_1]
+        course_2 = self.schedule[pos_2]
+
+        num_days_1_before = len(set([pos[1] // periods_per_day for pos in self.course_positions[course_1]]))
+        num_days_2_before = len(set([pos[1] // periods_per_day for pos in self.course_positions[course_2]]))
+
+        coures_1_positions = list(self.course_positions[coures_1])
+        coures_2_positions = list(self.course_positions[coures_2])
+
+        coures_1_positions.remove(pos_1)
+        coures_1_positions.append(pos_2)
+        coures_2_positions.remove(pos_2)
+        coures_2_positions.append(pos_1)
+
+        num_days_1_after = len(set([pos[1] // periods_per_day for pos in coures_1_positions]))
+        num_days_2_after = len(set([pos[1] // periods_per_day for pos in coures_2_positions]))
+
+        return penalty * (num_days_1_after + num_days_2_after - num_days_1_before - num_days_2_before)
+
 
     def _compactness_delta(self):
         pass
+
 
     def _room_delta(self, pos_1, pos_2):
         course_1 = self.schedule[pos_1]
@@ -119,11 +142,6 @@ class Timetable(object):
 
         return num_rooms_after - num_rooms_before
 
-    def _capacity_delta(self):
-        pass
-
-    def _unscheduled_delta(self):
-        pass
 
 
     def _unscheduled_penalty(self):
