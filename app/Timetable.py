@@ -34,43 +34,95 @@ class Timetable(object):
                         i += 1
                     else:
                         scheduled = True
-                        self.insert_course(ind, course_id)
+                        self.insert_course(ind, course_id, True)
+
+        self._calc_score_total()
 
 
-    def insert_course(self, position, course):
+    def insert_course(self, position, course, init=False):
         self.schedule[position] = course
         self.course_positions[course].append(position)
 
+        if init:
+            delta = self._delta_eval(pos_1, pos_2)
+
+    def _delta_eval(self, pos_1, pos_2):
+        delta = []
+        delta.append(self._unscheduled_delta())
+        delta.append(self._capacity_delta(pos_1, pos_2))
+        delta.append(self._compactness_delta())
+        delta.append(self._min_days_delta())
+        delta.append(self._room_delta(pos_1, pos_2))
+
+        return sum(delta)
+
 
     def swap_courses(self, pos_1, pos_2):
+        course_1 = self.schedule[pos_1]
+        course_2 = self.schedule[pos_2]
 
-                # if old_course != -1:
-                #     self.course_positions[old_course].remove(position)
+        self.schedule[pos_1] = course_2
+        self.schedule[pos_2] = course_1
+
+        if course_1 != -1:
+            self.course_positions[course_1].remove(pos_1)
+            self.course_positions[course_1].append(pos_2)
+
+        if course_2 != -1:
+            self.course_positions[course_2].remove(pos_2)
+            self.course_positions[course_2].append(pos_1)
+
+
+    def _calc_score_total(self):
+        penalty = []
+        penalty.append(self.unscheduled_penalty(individual))
+        penalty.append(self.capacity_penalty(individual))
+        penalty.append(self.min_days_penalty(individual))
+        penalty.append(self.compactness_penalty(individual))
+        penalty.append(self.room_penalty(individual))
+
+        self.score = sum(penalty)
+
+    def _capacity_delta(self, pos_1, pos_2):
+        capacity_1 = self.data['rooms'][pos_1[0]]
+        capacity_2 = self.data['rooms'][pos_2[0]]
+
+        students_per_course_1 = self.data['students_per_course'][self.schedule[pos_1]]
+        students_per_course_2 = self.data['students_per_course'][self.schedule[pos_2]]
+
+        before = max(0, students_per_course_1 - capacity_1) + max(0, students_per_course_2 - capacity_2)
+        after  = max(0, students_per_course_2 - capacity_1) + max(0, students_per_course_1 - capacity_2)
+
+        return after - before
+
+    def _min_days_delta(self):
         pass
 
-
-    def check_feasibility(self):
+    def _compactness_delta(self):
         pass
 
-    def _calc_score_all(self):
+    def _room_delta(self, pos_1, pos_2):
+        course_1 = self.schedule[pos_1]
+        course_2 = self.schedule[pos_2]
+
+        num_rooms_before = len(set([pos[0] for pos in self.course_positions[course_1]])) + len(set([pos[0] for pos in self.course_positions[course_2]]))
+
+        coures_1_positions = list(self.course_positions[coures_1])
+        coures_2_positions = list(self.course_positions[coures_2])
+
+        coures_1_positions.remove(pos_1)
+        coures_1_positions.append(pos_2)
+        coures_2_positions.remove(pos_2)
+        coures_2_positions.append(pos_1)
+
+        num_rooms_after = len(set([pos[0] for pos in coures_1_positions])) + len(set([pos[0] for pos in coures_2_positions]))
+
+        return num_rooms_after - num_rooms_before
+
+    def _capacity_delta(self):
         pass
 
-    def _delta_eval_room_capacity(self):
-        pass
-
-    def _delta_eval_room_stability(self):
-        pass
-
-    def _delta_eval_compactness(self):
-        pass
-
-    def _delta_eval_min_working_days(self):
-        pass
-
-    def _delta_eval_room_capacity(self):
-        pass
-
-    def _delta_eval_unscheduled(self):
+    def _unscheduled_delta(self):
         pass
 
 
@@ -82,13 +134,6 @@ class Timetable(object):
         a penalty of 10 points.
 
         A whole individual is checked in order to calculate the penalty
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            penalty:   The penalty for not scheduling all the lectures for some courses
         """
 
         individual = self.schedule
@@ -113,13 +158,6 @@ class Timetable(object):
         1 point of penalty.
 
         A whole individual is checked in order to calculate the penalty
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            penalty:   The penalty for scheduling lectures in not big enough rooms
         """
 
         individual = self.schedule
@@ -143,13 +181,6 @@ class Timetable(object):
         of penalty.
 
         A whole individual is checked in order to calculate the penalty
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            penalty:   The penalty for not spreading the course over minimum number of days
         """
 
         individual = self.schedule
@@ -175,11 +206,6 @@ class Timetable(object):
         for key in days_desired:
             value += max(0, days_desired[key] - sum(scheduled[key,:]))
 
-        # Actually slower than above
-        # values = 0
-        # for course, info in courses.iteritems():
-        #     values += max(0, info['minimum_working_days'] - sum(scheduled[course[1:],:]))
-
         return value * penalty
 
 
@@ -193,13 +219,6 @@ class Timetable(object):
         points of penalty.
 
         A whole individual is checked in order to calculate the penalty
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            penalty:   The penalty for not having compactness for courses in curricula
         """
 
         individual = self.schedule
@@ -288,13 +307,6 @@ class Timetable(object):
         as 1 point of penalty.
 
         A whole individual is checked in order to calculate the penalty
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            penalty:   The penalty for using more than one room per course
         """
 
         individual = self.schedule
@@ -317,16 +329,17 @@ class Timetable(object):
         return value * penalty
 
 
-    def check_single_lecturer(self, course, idx, self_check=False):
+    def check_single_lecturer(self, pos_1, pos_2, self_check=False):
         individual = self.schedule
+        course = individual[pos_1]
 
         if course == -1:
             return False
 
-        lecturers_in_slot = [l for c in individual[:,idx[1]] if c!=-1 for l in self.data["lecturer_lecture"][c] ]
+        lecturers_in_slot = [l for c in individual[:,pos_2[1]] if c!=-1 for l in self.data["lecturer_lecture"][c] ]
 
         if self_check == True:
-            lecturers_in_slot = [l for c in individual[:,idx[1]] if c!=-1 and c!=course for l in self.data["lecturer_lecture"][c] ]
+            lecturers_in_slot = [l for c in individual[:,pos_2[1]] if c!=-1 and c!=course for l in self.data["lecturer_lecture"][c] ]
 
         if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
             return True
@@ -334,43 +347,9 @@ class Timetable(object):
             return False
 
 
-
-    def check_conflicts_constraint(self):
-        """
-        Lectures of courses in the same curriculum or taught by the same
-        lecturer must all be scheduled in different time slots.
-
-        A whole individual is checked in order to determine if the condition
-        stated above is fulfilled. In case that a gene of the individual
-        violates such condition, the index is returned.
-
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            (row(int), col(int)):   Indices of the conflict in the individual if
-                                    constraint is violated.
-
-                            None:    If there is no conflict in the individual.
-        """
+    def check_single_conflict(self, pos_1, pos_2, self_check=False):
         individual = self.schedule
-        relations = self.data["relations"]
-        for timeslot in range(individual.shape[1]):
-            timeslot_courses = individual[:,timeslot]
-
-            for curriculum, courses in relations.iteritems():
-                count = Counter(timeslot_courses)
-                count = [count[int(course[1:])] for course in courses]
-                if sum(count) > 1:
-                    indx = np.nonzero(count)[0][0]
-                    room_idx = np.where(individual[:,timeslot] == int(courses[indx][1:]))[0][0]
-
-                    return (room_idx, timeslot)
-
-
-    def check_single_conflict(self, course, idx, self_check=False):
-        individual = self.schedule
+        course = individual[pos_1]
 
         if course == -1:
             return False
@@ -386,39 +365,10 @@ class Timetable(object):
 
         return False
 
-    def check_availability_constraint(self):
-        """
-        Some courses cannot be scheduled at specific time slots.
 
-        A whole individual is checked in order to determine if the condition
-        stated above is fulfilled. In case that a gene of the individual
-        violates such condition, the index is returned.
+    def check_single_availability(self, ind, timeslot):
+        course = self.schedule[ind]
 
-        Args:
-            individual (ndarray): Individual representation.
-
-
-        Returns:
-            (row(int), col(int)):   Indices of the conflict in the individual if
-                                    constraint is violated.
-
-                            None:    If there is no conflict in the individual.
-        """
-        individual = self.schedule
-        periods_per_day = self.data["basics"]["periods_per_day"]
-
-        for course, constraints in self.data["unavailability"].iteritems():
-            course_no = int(course[1:])
-            for timeslot_tuple in zip(constraints["day"], constraints["period"]):
-                # self.check_single_availability(course, timeslot_tuple, individual)
-                conflict_timeslot = periods_per_day*timeslot_tuple[0]+timeslot_tuple[1]
-                if course_no in individual[:,conflict_timeslot]:
-                    # print "Unavailability conflict"
-                    room_idx = np.where(individual[:, conflict_timeslot] == course_no)[0][0]
-                    return (room_idx, conflict_timeslot)
-
-
-    def check_single_availability(self, course, timeslot):
         if course == -1:
             return False
 
