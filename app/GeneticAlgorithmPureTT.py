@@ -4,6 +4,8 @@ import time
 from collections import Counter
 import FitnessFunctionTT as fftt
 import random
+from Timetable import Timetable
+import pdb
 
 class GeneticAlgorithmPureTT():
 
@@ -13,23 +15,16 @@ class GeneticAlgorithmPureTT():
         self.data = data
         self.fitness_model = fitness_model
 
-        # Create random initial population
-        self.population = self.initialization(data["basics"]["rooms"],
-                        data["basics"]["periods_per_day"] * data["basics"]["days"])
+        self.population = []
+        self.initialize_population()
 
         self.best_individual = None
 
-        # self.print_population()
-
 
     def genetic_simulation(self):
-
-        # Population is already initialized from the constructor
         init_time = time.time()
-        best_individual = self.fitness_model.get_best(self.population)
         iteration = 0
-        #print 'Best individual iteration ', iteration
-        #print self.fitness_model.evaluate(self.population[best_individual])
+
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
@@ -42,59 +37,29 @@ class GeneticAlgorithmPureTT():
 
             iteration += 1
         #print 'Best individual iteration ', iteration
-        #best_individual = self.fitness_model.get_best(self.population)
-        print 'BEEEEEEEEEST'
-        print self.fitness_model.evaluate(self.population[best_individual])
+        best_individual = self.fitness_model.get_best(self.population)
+        # print 'BEEEEEEEEEST'
+        # print self.fitness_model.evaluate(self.population[best_individual])
         self.print_population(self.population[best_individual])
         print 'Iterations : ' , iteration
 
 
 
-    def initialization(self, num_rooms, timeslots):
-        population = []
-        time_start = time.time()
-
-        iteration = 0
-        # for i in range(self.population_size):
-        while len(population) < self.population_size:
-            individual = np.zeros(shape=(num_rooms, timeslots), dtype=np.int8) - 1
-            idcs = [idcs for idcs, val in np.ndenumerate(individual)]
-            np.random.shuffle(idcs)
-
-            for course, course_info in self.data["courses"].iteritems():
-                for num_lecture in range(course_info["number_of_lectures"]):
-                    scheduled = False
-                    i = 0
-
-                    while not scheduled:
-                        if i == len(idcs):
-                            break
-                        ind = idcs.pop(0)
-                        course_id = int(course[1:])
-                        if (
-                            self.fitness_model.check_single_conflict(course_id, ind, individual, self_check=False) or
-                            self.fitness_model.check_single_availability(course_id, ind[1]) or
-                            self.fitness_model.check_single_lecturer(course_id, ind, individual, self_check=False)
-                        ):
-                            idcs.append(ind)
-                            i += 1
-                        else:
-                            scheduled = True
-                            individual[ind] = course_id
-
-            population.append(individual)
-        print time.time()-time_start
-
-        return population
+    def initialize_population(self):
+        for i in xrange(self.population_size):
+            Individual = Timetable(self.data)
+            self.population.append(Individual)
 
 
-    def evaluation(self, individual):
-        return self.fitness_model.evaluate(individual)
+    def evaluation(self, Individual):
+        return self.fitness_model.evaluate(Individual)
 
 
     def selection(self, best_selection=True):
         individual_indices = np.random.choice(range(len(self.population)), size=4, replace=False)
-        fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
+        pdb.set_trace()
+        fitness_values = [self.population[ind].score for ind in individual_indices]
+        # fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
 
         if best_selection:
             return (individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
@@ -106,44 +71,40 @@ class GeneticAlgorithmPureTT():
 
     def recombination(self, parent1, parent2):
 
-        # # Random cuts for columns
-        # col_cut1, col_cut2 = sorted(random.sample(range(parent1.shape[1]), 2))
-        # # Random cuts for rows
-        # row_cut1, row_cut2 = sorted(random.sample(range(parent1.shape[0]), 2))
-        parent1 = self.population[parent1]
-        parent2 = self.population[parent2]
+        Parent1 = self.population[parent1]
+        Parent2 = self.population[parent2]
+
+        parent1 = Parent1.schedule
+        parent2 = Parent2.schedule
 
         row_cut1, row_cut2 = np.random.choice(range(parent1.shape[0]), size=2)
         col_cut1, col_cut2 = np.random.choice(range(parent1.shape[1]), size=2)
-
-        # print "Column cuts: ", col_cut1, col_cut2
-        # print "Row cuts: ", row_cut1, row_cut2
 
         offspring1 = np.copy(parent1)
         offspring2 = np.copy(parent2)
 
         offspring = [offspring1, offspring2]
 
-        for child, parent in zip(offspring, [parent2, parent1]):
-            for r in range(row_cut1, row_cut2 + 1):
-                for c in range(col_cut1, col_cut2 + 1):
-                    course2swap = parent[r,c]
-                    ind = np.where(child == course2swap)
-
-                    for r_prime, c_prime in zip(ind[0], ind[1]):
-                        if (
-                            self.fitness_model.check_single_conflict(child[r_prime, c_prime], (r, c), child, self_check=False) or
-                            self.fitness_model.check_single_conflict(child[r, c], (r_prime,c_prime), child, self_check=False) or
-                            self.fitness_model.check_single_availability(child[r,c], c_prime) or
-                            self.fitness_model.check_single_availability(child[r_prime, c_prime], c) or
-                            self.fitness_model.check_single_lecturer(child[r,c], (r_prime, c_prime), child, self_check=False) or
-                            self.fitness_model.check_single_lecturer(child[r_prime, c_prime], (r,c), child, self_check=False)
-                        ):
-                            continue
-                        else:
-                            child = self.random_swap((r,c), (r_prime, c_prime), child)
-                            break
-
+        # for child, parent in zip(offspring, [parent2, parent1]):
+        #     for r in range(row_cut1, row_cut2 + 1):
+        #         for c in range(col_cut1, col_cut2 + 1):
+        #             course2swap = parent[r,c]
+        #             ind = np.where(child == course2swap)
+        #
+        #             for r_prime, c_prime in zip(ind[0], ind[1]):
+        #                 if (
+        #                     self.fitness_model.check_single_conflict(child[r_prime, c_prime], (r, c), child, self_check=False) or
+        #                     self.fitness_model.check_single_conflict(child[r, c], (r_prime,c_prime), child, self_check=False) or
+        #                     self.fitness_model.check_single_availability(child[r,c], c_prime) or
+        #                     self.fitness_model.check_single_availability(child[r_prime, c_prime], c) or
+        #                     self.fitness_model.check_single_lecturer(child[r,c], (r_prime, c_prime), child, self_check=False) or
+        #                     self.fitness_model.check_single_lecturer(child[r_prime, c_prime], (r,c), child, self_check=False)
+        #                 ):
+        #                     continue
+        #                 else:
+        #                     child = self.random_swap((r,c), (r_prime, c_prime), child)
+        #                     break
+        #
         return offspring
 
 
