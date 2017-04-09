@@ -2,7 +2,6 @@ from FitnessFunctionBase import FitnessFunctionBase
 from collections import Counter
 import numpy as np
 from scipy.stats import itemfreq
-import pandas as pd
 import copy
 import operator
 from functools import reduce
@@ -60,18 +59,18 @@ class FitnessFunctionTT(FitnessFunctionBase):
                 value -= occurrences_scheduled[key]
 
         return value * penalty
-    
+
     def unscheduled_delta(self, individual, slot, course_position):
-        
+
         penalty = 10
         value = 0
         room = slot[0]
         tslot = slot[1]
         course = individual[room, tslot]
-        
+
         value = self.data['courses'][course]['number_of_lectures']-len(course_position[course])
         return value*penalty
-        
+
 
     def capacity_penalty(self, individual):
         """
@@ -148,10 +147,10 @@ class FitnessFunctionTT(FitnessFunctionBase):
         #     values += max(0, info['minimum_working_days'] - sum(scheduled[course[1:],:]))
 
         return value * penalty
-        
-        
+
+
     def min_days_delta(self, individual, slot1, slot2, course_position):
-        
+
         penalty = 5
         value_before = 0
         value_after = 0
@@ -164,22 +163,22 @@ class FitnessFunctionTT(FitnessFunctionBase):
             for pos in course_position[courses[i]]:
                 periods[i,pos].append(pos[1] // periods_per_day)
             value_before += self.data['courses'][courses[i]]['minimum_working_days']-len(set(periods[i,:]))
-        
+
         course_position_copy = dict(course_position)
         course_position_copy[courses[0]].remove(slot1)
         course_position_copy[courses[0]].append(slot2)
         course_position_copy[courses[1]].remove(slot2)
         course_position_copy[courses[1]].append(slot1)
-        
+
         periods = []
         periods_per_day = self.data['basics']['periods_per_day']
         for i in range(2):
             for pos in course_position_copy[courses[i]]:
                 periods[i,pos].append(pos[1] // periods_per_day)
             value_after += self.data['courses'][courses[i]]['minimum_working_days']-len(set(periods[i,:]))
-        
+
         return penalty*max(0,value_after-value_before)
-        
+
 
 
     def compactness_penalty(self, individual):
