@@ -57,7 +57,12 @@ class Timetable(object):
 
 
     def swap_courses(self, pos_1, pos_2):
-        self.score = self.score + self._delta_eval(pos_1, pos_2)
+        print 'real score before: ', self.calc_score_total(save=False)
+        print 'delta score before: ', self.score
+        tmp = self._delta_eval(pos_1, pos_2)
+        self.score = self.score + tmp
+        print "delta: ", tmp
+        print 'delta score after: ', self.score
 
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
@@ -73,6 +78,8 @@ class Timetable(object):
             self.course_positions[course_2].remove(pos_2)
             self.course_positions[course_2].append(pos_1)
 
+        print 'real score after: ', self.calc_score_total(save=False)
+        print '---------------\n'
 
     def calc_score_total(self, save=True):
         penalty = []
@@ -284,25 +291,27 @@ class Timetable(object):
         num_rooms_before = 0
         course_1_positions = []
         course_2_positions = []
+
         if course_1 != -1:
-            num_rooms_before += max(0, len(set([pos[0] for pos in self.course_positions[course_1]])) - 1)
+            num_rooms_before += len(set([pos[0] for pos in self.course_positions[course_1]])) - 1
             course_1_positions = list(self.course_positions[course_1])
             course_1_positions.remove(pos_1)
-            course_2_positions.append(pos_1)
+
         if course_2 != -1:
-            num_rooms_before += max(0, len(set([pos[0] for pos in self.course_positions[course_2]])) - 1)
+            num_rooms_before += len(set([pos[0] for pos in self.course_positions[course_2]])) - 1
             course_2_positions = list(self.course_positions[course_2])
             course_2_positions.remove(pos_2)
-            course_1_positions.append(pos_2)
+
+        course_2_positions.append(pos_1)
+        course_1_positions.append(pos_2)
 
         num_rooms_after = 0
         if course_1 != -1:
-            num_rooms_after += max(0, len(set([pos[0] for pos in course_1_positions])) - 1)
+            num_rooms_after += len(set([pos[0] for pos in course_1_positions])) - 1
         if course_2 != -1:
-            num_rooms_after += max(0, len(set([pos[0] for pos in course_2_positions])) - 1)
+            num_rooms_after += len(set([pos[0] for pos in course_2_positions])) - 1
 
-        return - num_rooms_after + num_rooms_before
-
+        return  num_rooms_after - num_rooms_before
 
 
     def _unscheduled_penalty(self):
