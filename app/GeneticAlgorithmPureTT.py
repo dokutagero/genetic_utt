@@ -38,12 +38,15 @@ class GeneticAlgorithmPureTT():
 
             iteration += 1
         #print 'Best individual iteration ', iteration
-        best_individual = self.fitness_model.get_best(self.population)
+        # best_individual = self.fitness_model.get_best(self.population)
+        score_list = [individual.score for individual in self.population]
+        best_individual = score_list.index(min(score_list))
+
         # print 'BEEEEEEEEEST'
         # print self.fitness_model.evaluate(self.population[best_individual])
-        self.print_population(self.population[best_individual])
-        print 'Iterations : ' , iteration
-
+        # self.print_population(self.population[best_individual])
+        print "Best score: ", self.population[best_individual].score
+        print 'Iterations: ', iteration
 
 
     def initialize_population(self):
@@ -58,7 +61,7 @@ class GeneticAlgorithmPureTT():
 
     def selection(self, best_selection=True):
         individual_indices = np.random.choice(range(len(self.population)), size=4, replace=False)
-        pdb.set_trace()
+        # pdb.set_trace()
         fitness_values = [self.population[ind].score for ind in individual_indices]
         # fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
 
@@ -89,23 +92,24 @@ class GeneticAlgorithmPureTT():
                     parent_course2swap = parent.schedule[r,c]
                     child_course2swap = child.schedule[r,c]
 
-                    idcs_child_candidates = child.course_positions[parent_course2swap]
-                    # If there are scheduled courses.
-                    if idcs_child_candidates:
-                        for position, idx_candidate in enumerate(idcs_child_candidates):
-                            if(
-                            child.check_single_conflict(idx_candidate, (r, c), self_check=False) or
-                            child.check_single_conflict((r, c), idx_candidate, self_check=False) or
-                            child.check_single_availability((r,c), idx_candidate[1]) or
-                            child.check_single_availability(idx_candidate, c) or
-                            child.check_single_lecturer((r,c), idx_candidate, self_check=False) or
-                            child.check_single_lecturer(idx_candidate, (r,c), self_check=False)
-                            ):
-                                # If we can't swap it with the first candidate,
-                                # we check the next one.
-                                continue
-                            else:
-                                child.swap_courses(idx_candidate, (r,c))
+                    if parent_course2swap != -1:
+                        idcs_child_candidates = child.course_positions[parent_course2swap]
+                        # If there are scheduled courses.
+                        if idcs_child_candidates:
+                            for position, idx_candidate in enumerate(idcs_child_candidates):
+                                if(
+                                child.check_single_conflict(idx_candidate, (r, c)) or
+                                child.check_single_conflict((r, c), idx_candidate) or
+                                child.check_single_availability((r,c), idx_candidate[1]) or
+                                child.check_single_availability(idx_candidate, c) or
+                                child.check_single_lecturer((r,c), idx_candidate) or
+                                child.check_single_lecturer(idx_candidate, (r,c))
+                                ):
+                                    # If we can't swap it with the first candidate,
+                                    # we check the next one.
+                                    continue
+                                else:
+                                    child.swap_courses(idx_candidate, (r,c))
 
 
         return offspring
@@ -120,12 +124,12 @@ class GeneticAlgorithmPureTT():
                 row = np.random.randint(0, child.shape[0])
                 col = np.random.randint(0, child.shape[1])
                 if (
-                    Child.check_single_conflict((room,ts), (row,col), self_check=False) or
-                    Child.check_single_conflict((row, col), (room, ts), self_check=False) or
+                    Child.check_single_conflict((room,ts), (row,col)) or
+                    Child.check_single_conflict((row, col), (room, ts)) or
                     Child.check_single_availability((row,col), ts) or
                     Child.check_single_availability((room, ts), col) or
-                    Child.check_single_lecturer((row,col), (room, ts), self_check=False) or
-                    Child.check_single_lecturer((room, ts), (row,col), self_check=False)
+                    Child.check_single_lecturer((row,col), (room, ts)) or
+                    Child.check_single_lecturer((room, ts), (row,col))
                 ):
                     continue
 

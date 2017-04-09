@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.stats import itemfreq
+
 
 class Timetable(object):
 
@@ -26,9 +28,9 @@ class Timetable(object):
                         break
 
                     if (
-                        self.check_single_conflict(course_id, ind, self_check=False) or
-                        self.check_single_availability(course_id, ind[1]) or
-                        self.check_single_lecturer(course_id, ind, self_check=False)
+                        self.check_single_conflict_self(course_id, ind) or
+                        self.check_single_availability_self(course_id, ind) or
+                        self.check_single_lecturer_self(course_id, ind)
                     ):
                         idcs.append(ind)
                         i += 1
@@ -43,8 +45,6 @@ class Timetable(object):
         self.schedule[position] = course
         self.course_positions[course].append(position)
 
-        if init:
-            delta = self._delta_eval(pos_1, pos_2)
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
@@ -57,6 +57,8 @@ class Timetable(object):
 
 
     def swap_courses(self, pos_1, pos_2):
+        self._delta_eval(pos_1, pos_2)
+
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
 
@@ -74,11 +76,11 @@ class Timetable(object):
 
     def _calc_score_total(self):
         penalty = []
-        penalty.append(self.unscheduled_penalty(individual))
-        penalty.append(self.capacity_penalty(individual))
-        penalty.append(self.min_days_penalty(individual))
-        penalty.append(self.compactness_penalty(individual))
-        penalty.append(self.room_penalty(individual))
+        penalty.append(self._unscheduled_penalty())
+        penalty.append(self._capacity_penalty())
+        penalty.append(self._min_days_penalty())
+        penalty.append(self._compactness_penalty())
+        penalty.append(self._room_penalty())
 
         self.score = sum(penalty)
 
@@ -87,8 +89,15 @@ class Timetable(object):
         capacity_1 = self.data['rooms'][pos_1[0]]
         capacity_2 = self.data['rooms'][pos_2[0]]
 
-        students_per_course_1 = self.data['students_per_course'][self.schedule[pos_1]]
-        students_per_course_2 = self.data['students_per_course'][self.schedule[pos_2]]
+        if self.schedule[pos_1] != -1:
+            students_per_course_1 = self.data['students_per_course'][self.schedule[pos_1]]
+        else:
+            students_per_course_1 = 0
+
+        if self.schedule[pos_2] != -1:
+            students_per_course_2 = self.data['students_per_course'][self.schedule[pos_2]]
+        else:
+            students_per_course_2 = 0
 
         before = max(0, students_per_course_1 - capacity_1) + max(0, students_per_course_2 - capacity_2)
         after  = max(0, students_per_course_2 - capacity_1) + max(0, students_per_course_1 - capacity_2)
@@ -103,19 +112,22 @@ class Timetable(object):
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
 
+        # TODO
+        # WE NEED TO ADD A CHECK IF course_1 and coures_2 are not -1
+
         num_days_1_before = len(set([pos[1] // periods_per_day for pos in self.course_positions[course_1]]))
         num_days_2_before = len(set([pos[1] // periods_per_day for pos in self.course_positions[course_2]]))
 
-        coures_1_positions = list(self.course_positions[coures_1])
-        coures_2_positions = list(self.course_positions[coures_2])
+        course_1_positions = list(self.course_positions[course_1])
+        course_2_positions = list(self.course_positions[course_2])
 
-        coures_1_positions.remove(pos_1)
-        coures_1_positions.append(pos_2)
-        coures_2_positions.remove(pos_2)
-        coures_2_positions.append(pos_1)
+        course_1_positions.remove(pos_1)
+        course_1_positions.append(pos_2)
+        course_2_positions.remove(pos_2)
+        course_2_positions.append(pos_1)
 
-        num_days_1_after = len(set([pos[1] // periods_per_day for pos in coures_1_positions]))
-        num_days_2_after = len(set([pos[1] // periods_per_day for pos in coures_2_positions]))
+        num_days_1_after = len(set([pos[1] // periods_per_day for pos in course_1_positions]))
+        num_days_2_after = len(set([pos[1] // periods_per_day for pos in course_2_positions]))
 
         return penalty * (num_days_1_after + num_days_2_after - num_days_1_before - num_days_2_before)
 
@@ -125,7 +137,14 @@ class Timetable(object):
         periods_per_day = self.data['basics']['periods_per_day']
         timeslots =  self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]
 
-        curricula_list = [self.data['course_curricula'][self.schedule[pos_1]], self.data['course_curricula'][self.schedule[pos_2]]]
+        curricula_1 = []
+        curricula_2 = []
+        if self.schedule[pos_1] != -1:
+            curricula_1 = self.data['course_curricula'][self.schedule[pos_1]]
+        if self.schedule[pos_2] != -1:
+            curricula_2 = self.data['course_curricula'][self.schedule[pos_2]]
+
+        curricula_list = [curricula_1, curricula_2]
         pos_list = [pos_1, pos_2]
 
         value_before = 0
@@ -137,13 +156,12 @@ class Timetable(object):
         # _a  - after
         # _aa - after after
 
-        for pos, curricula in zip(curricula_list, pos_list):
-
-            day_bb = pos[1]-2 // peroids_per_day if pos[1] - 2 >= 0 else -1
-            day_b  = pos[1]-1 // peroids_per_day if pos[1] - 1 >= 0 else -1
-            day    = pos[1] // peroids_per_day
-            day_a  = pos[1]+1 // periods_per_day if pos[1] + 1 < timeslots else -1
-            day_aa = pos[1]+2 // peroids_per_day if pos[1] + 2 < timeslots else -1
+        for pos, curricula in zip(pos_list, curricula_list):
+            day_bb = pos[1] - 2 // periods_per_day if pos[1] - 2 >= 0 else -1
+            day_b  = pos[1] - 1 // periods_per_day if pos[1] - 1 >= 0 else -1
+            day    = pos[1] // periods_per_day
+            day_a  = pos[1] + 1 // periods_per_day if pos[1] + 1 < timeslots else -1
+            day_aa = pos[1] + 2 // periods_per_day if pos[1] + 2 < timeslots else -1
 
             # Check timeslot before
             if day_b == day:
@@ -166,10 +184,10 @@ class Timetable(object):
 
             #  Check timeslot after
             if day_a == day:
-                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+1]]
+                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+1]]
 
                 if day_aa == day:
-                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+2]]
+                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+2]]
 
                     for curriculum in curricula:
                         if curriculum in curricula_a:
@@ -191,14 +209,24 @@ class Timetable(object):
         schedule_copy[pos_1] = course_2
         schedule_copy[pos_2] = course_1
 
+        curricula_1 = []
+        curricula_2 = []
+        if schedule_copy[pos_1] != -1:
+            curricula_1 = self.data['course_curricula'][schedule_copy[pos_1]]
+        if schedule_copy[pos_2] != -1:
+            curricula_2 = self.data['course_curricula'][schedule_copy[pos_2]]
 
-        for pos, curricula in zip(curricula_list, pos_list):
+        curricula_list = [curricula_1, curricula_2]
+        pos_list = [pos_1, pos_2]
 
-            day_bb = pos[1]-2 // peroids_per_day if pos[1] - 2 >= 0 else -1
-            day_b  = pos[1]-1 // peroids_per_day if pos[1] - 1 >= 0 else -1
-            day    = pos[1] // peroids_per_day
+
+        for pos, curricula in zip(pos_list, curricula_list):
+
+            day_bb = pos[1]-2 // periods_per_day if pos[1] - 2 >= 0 else -1
+            day_b  = pos[1]-1 // periods_per_day if pos[1] - 1 >= 0 else -1
+            day    = pos[1] // periods_per_day
             day_a  = pos[1]+1 // periods_per_day if pos[1] + 1 < timeslots else -1
-            day_aa = pos[1]+2 // peroids_per_day if pos[1] + 2 < timeslots else -1
+            day_aa = pos[1]+2 // periods_per_day if pos[1] + 2 < timeslots else -1
 
             # Check timeslot before
             if day_b == day:
@@ -221,10 +249,10 @@ class Timetable(object):
 
             #  Check timeslot after
             if day_a == day:
-                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+1]]
+                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+1]]
 
                 if day_aa == day:
-                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+2]]
+                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+2]]
 
                     for curriculum in curricula:
                         if curriculum in curricula_a:
@@ -247,15 +275,15 @@ class Timetable(object):
 
         num_rooms_before = len(set([pos[0] for pos in self.course_positions[course_1]])) + len(set([pos[0] for pos in self.course_positions[course_2]]))
 
-        coures_1_positions = list(self.course_positions[coures_1])
-        coures_2_positions = list(self.course_positions[coures_2])
+        course_1_positions = list(self.course_positions[course_1])
+        course_2_positions = list(self.course_positions[course_2])
 
-        coures_1_positions.remove(pos_1)
-        coures_1_positions.append(pos_2)
-        coures_2_positions.remove(pos_2)
-        coures_2_positions.append(pos_1)
+        course_1_positions.remove(pos_1)
+        course_1_positions.append(pos_2)
+        course_2_positions.remove(pos_2)
+        course_2_positions.append(pos_1)
 
-        num_rooms_after = len(set([pos[0] for pos in coures_1_positions])) + len(set([pos[0] for pos in coures_2_positions]))
+        num_rooms_after = len(set([pos[0] for pos in course_1_positions])) + len(set([pos[0] for pos in course_2_positions]))
 
         return num_rooms_after - num_rooms_before
 
@@ -464,7 +492,21 @@ class Timetable(object):
         return value * penalty
 
 
-    def check_single_lecturer(self, pos_1, pos_2, self_check=False):
+    def check_single_lecturer_self(self, course, pos):
+        individual = self.schedule
+
+        if course == -1:
+            return False
+
+        lecturers_in_slot = [l for c in individual[:,pos[1]] if c!=-1 and c!=course for l in self.data["lecturer_lecture"][c] ]
+
+        if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
+            return True
+        else:
+            return False
+
+
+    def check_single_lecturer(self, pos_1, pos_2):
         individual = self.schedule
         course = individual[pos_1]
 
@@ -473,16 +515,26 @@ class Timetable(object):
 
         lecturers_in_slot = [l for c in individual[:,pos_2[1]] if c!=-1 for l in self.data["lecturer_lecture"][c] ]
 
-        if self_check == True:
-            lecturers_in_slot = [l for c in individual[:,pos_2[1]] if c!=-1 and c!=course for l in self.data["lecturer_lecture"][c] ]
-
         if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
             return True
         else:
             return False
 
 
-    def check_single_conflict(self, pos_1, pos_2, self_check=False):
+    def check_single_conflict_self(self, course, pos):
+        individual = self.schedule
+
+        if course == -1:
+            return False
+
+        course_conflicts = self.data["curric_conflict"][course]
+        if len([c for c in individual[:,pos[1]] if c in course_conflicts])>1:
+            return True
+        else:
+            return False
+
+
+    def check_single_conflict(self, pos_1, pos_2):
         individual = self.schedule
         course = individual[pos_1]
 
@@ -490,15 +542,23 @@ class Timetable(object):
             return False
 
         course_conflicts = self.data["curric_conflict"][course]
-        if self_check == True:
-            if len([c for c in individual[:,idx[1]] if c in course_conflicts])>1:
+        for c in individual[:,pos_2[1]]:
+            if c in course_conflicts:
                 return True
-        else:
-            for c in individual[:,idx[1]]:
-                if c in course_conflicts:
-                    return True
 
         return False
+
+
+    def check_single_availability_self(self, course, pos):
+        timeslot = pos[1]
+
+        if course == -1:
+            return False
+
+        if timeslot in self.data["unavailable_slots"][course]:
+            return True
+        else:
+            return False
 
 
     def check_single_availability(self, ind, timeslot):
