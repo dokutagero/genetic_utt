@@ -48,9 +48,9 @@ class Timetable(object):
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
-        delta.append(self._capacity_delta(pos_1, pos_2))
-        delta.append(self._compactness_delta(pos_1, pos_2))
-        delta.append(self._min_days_delta(pos_1, pos_2))
+        # delta.append(self._capacity_delta(pos_1, pos_2))
+        # delta.append(self._compactness_delta(pos_1, pos_2))
+        # delta.append(self._min_days_delta(pos_1, pos_2))
         delta.append(self._room_delta(pos_1, pos_2))
 
         return sum(delta)
@@ -76,10 +76,10 @@ class Timetable(object):
 
     def calc_score_total(self, save=True):
         penalty = []
-        penalty.append(self._unscheduled_penalty())
-        penalty.append(self._capacity_penalty())
-        penalty.append(self._min_days_penalty())
-        penalty.append(self._compactness_penalty())
+        # penalty.append(self._unscheduled_penalty())
+        # penalty.append(self._capacity_penalty())
+        # penalty.append(self._min_days_penalty())
+        # penalty.append(self._compactness_penalty())
         penalty.append(self._room_penalty())
 
         if save:
@@ -285,23 +285,23 @@ class Timetable(object):
         course_1_positions = []
         course_2_positions = []
         if course_1 != -1:
-            num_rooms_before += len(set([pos[0] for pos in self.course_positions[course_1]]))
+            num_rooms_before += max(0, len(set([pos[0] for pos in self.course_positions[course_1]])) - 1)
             course_1_positions = list(self.course_positions[course_1])
             course_1_positions.remove(pos_1)
             course_2_positions.append(pos_1)
         if course_2 != -1:
-            num_rooms_before += len(set([pos[0] for pos in self.course_positions[course_2]]))
+            num_rooms_before += max(0, len(set([pos[0] for pos in self.course_positions[course_2]])) - 1)
             course_2_positions = list(self.course_positions[course_2])
-            course_1_positions.append(pos_2)
             course_2_positions.remove(pos_2)
+            course_1_positions.append(pos_2)
 
         num_rooms_after = 0
         if course_1 != -1:
-            num_rooms_after += len(set([pos[0] for pos in course_1_positions]))
-        if course_2 != -2:
-            num_rooms_after += len(set([pos[0] for pos in course_2_positions]))
+            num_rooms_after += max(0, len(set([pos[0] for pos in course_1_positions])) - 1)
+        if course_2 != -1:
+            num_rooms_after += max(0, len(set([pos[0] for pos in course_2_positions])) - 1)
 
-        return num_rooms_after - num_rooms_before
+        return - num_rooms_after + num_rooms_before
 
 
 

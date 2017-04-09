@@ -44,9 +44,10 @@ class GeneticAlgorithmPureTT():
 
         # print 'BEEEEEEEEEST'
         # print self.fitness_model.evaluate(self.population[best_individual])
-        # self.print_population(self.population[best_individual])
-        print "Best score: ", self.population[best_individual].score
-        print 'The score should be: ', self.population[best_individual].calc_score_total(save=False)
+        self.best_individual = self.population[best_individual]
+        self.print_population(self.best_individual.schedule)
+        print "Best score: ", self.best_individual.score
+        print 'The score should be: ', self.best_individual.calc_score_total(save=False)
         print 'Iterations: ', iteration
 
 
