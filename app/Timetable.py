@@ -120,8 +120,125 @@ class Timetable(object):
         return penalty * (num_days_1_after + num_days_2_after - num_days_1_before - num_days_2_before)
 
 
-    def _compactness_delta(self):
-        pass
+    def _compactness_delta(self, pos_1, pos_2):
+        penalty = 2
+        periods_per_day = self.data['basics']['periods_per_day']
+        timeslots =  self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]
+
+        curricula_list = [self.data['course_curricula'][self.schedule[pos_1]], self.data['course_curricula'][self.schedule[pos_2]]]
+        pos_list = [pos_1, pos_2]
+
+        value_before = 0
+        value_after = 0
+
+        # _bb - before before
+        # _b  - before
+        #
+        # _a  - after
+        # _aa - after after
+
+        for pos, curricula in zip(curricula_list, pos_list):
+
+            day_bb = pos[1]-2 // peroids_per_day if pos[1] - 2 >= 0 else -1
+            day_b  = pos[1]-1 // peroids_per_day if pos[1] - 1 >= 0 else -1
+            day    = pos[1] // peroids_per_day
+            day_a  = pos[1]+1 // periods_per_day if pos[1] + 1 < timeslots else -1
+            day_aa = pos[1]+2 // peroids_per_day if pos[1] + 2 < timeslots else -1
+
+            # Check timeslot before
+            if day_b == day:
+                curricula_b  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-1]]
+
+                if day_bb == day:
+                    curricula_bb = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-2]]
+
+                    for curriculum in curricula:
+                        if curriculum in curricula_b:
+                            if curriculum not in curricula_bb:
+                                # if curriculum is in day_b but not in day_bb we seclude the course
+                                value_before += 1
+                else:
+                    for curriculum in curricula:
+                        if curriculum in curricula_b:
+                            # if curriculum is in day_b we seclude it for sure
+                            value_before += 1
+
+
+            #  Check timeslot after
+            if day_a == day:
+                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+1]]
+
+                if day_aa == day:
+                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+2]]
+
+                    for curriculum in curricula:
+                        if curriculum in curricula_a:
+                            if curriculum not in curricula_aa:
+                                # if curriculum is in day_a but not in day_bb we seclude the course
+                                value_before += 1
+                else:
+                    for curriculum in curricula:
+                        if curriculum in curricula_a:
+                            # if curriculum is in day_a we seclude it for sure
+                            value_before += 1
+
+
+        # simulate swap
+        course_1 = self.schedule[pos_1]
+        course_2 = self.schedule[pos_2]
+
+        schedule_copy = self.schedule.copy()
+        schedule_copy[pos_1] = course_2
+        schedule_copy[pos_2] = course_1
+
+
+        for pos, curricula in zip(curricula_list, pos_list):
+
+            day_bb = pos[1]-2 // peroids_per_day if pos[1] - 2 >= 0 else -1
+            day_b  = pos[1]-1 // peroids_per_day if pos[1] - 1 >= 0 else -1
+            day    = pos[1] // peroids_per_day
+            day_a  = pos[1]+1 // periods_per_day if pos[1] + 1 < timeslots else -1
+            day_aa = pos[1]+2 // peroids_per_day if pos[1] + 2 < timeslots else -1
+
+            # Check timeslot before
+            if day_b == day:
+                curricula_b  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-1]]
+
+                if day_bb == day:
+                    curricula_bb = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-2]]
+
+                    for curriculum in curricula:
+                        if curriculum in curricula_b:
+                            if curriculum not in curricula_bb:
+                                # if curriculum is in day_b but not in day_bb we seclude the course
+                                value_after += 1
+                else:
+                    for curriculum in curricula:
+                        if curriculum in curricula_b:
+                            # if curriculum is in day_b we seclude it for sure
+                            value_after += 1
+
+
+            #  Check timeslot after
+            if day_a == day:
+                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+1]]
+
+                if day_aa == day:
+                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]+2]]
+
+                    for curriculum in curricula:
+                        if curriculum in curricula_a:
+                            if curriculum not in curricula_aa:
+                                # if curriculum is in day_a but not in day_bb we seclude the course
+                                value_after += 1
+                else:
+                    for curriculum in curricula:
+                        if curriculum in curricula_a:
+                            # if curriculum is in day_a we seclude it for sure
+                            value_after += 1
+
+
+        return value_after - value_before
 
 
     def _room_delta(self, pos_1, pos_2):
