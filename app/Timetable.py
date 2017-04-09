@@ -48,9 +48,9 @@ class Timetable(object):
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
-        # delta.append(self._capacity_delta(pos_1, pos_2))
+        delta.append(self._capacity_delta(pos_1, pos_2))
         # delta.append(self._compactness_delta(pos_1, pos_2))
-        # delta.append(self._min_days_delta(pos_1, pos_2))
+        delta.append(self._min_days_delta(pos_1, pos_2))
         delta.append(self._room_delta(pos_1, pos_2))
 
         return sum(delta)
@@ -84,8 +84,8 @@ class Timetable(object):
     def calc_score_total(self, save=True):
         penalty = []
         # penalty.append(self._unscheduled_penalty())
-        # penalty.append(self._capacity_penalty())
-        # penalty.append(self._min_days_penalty())
+        penalty.append(self._capacity_penalty())
+        penalty.append(self._min_days_penalty())
         # penalty.append(self._compactness_penalty())
         penalty.append(self._room_penalty())
 
@@ -122,29 +122,32 @@ class Timetable(object):
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
 
-        num_days_1_before = 0
-        num_days_2_before = 0
+
+        missing_days_before = 0
+        missing_days_after  = 0
         course_1_positions = []
         course_2_positions = []
         if course_1 != -1:
-            num_days_1_before = len(set([pos[1] // periods_per_day for pos in self.course_positions[course_1]]))
+            min_days_1 = self.data['min_days_per_course'][course_1]
+            missing_days_before += max(0, min_days_1 - len(set([pos[1] // periods_per_day for pos in self.course_positions[course_1]])))
             course_1_positions = list(self.course_positions[course_1])
             course_1_positions.remove(pos_1)
-            course_2_positions.append(pos_1)
+
         if course_2 != -1:
-            num_days_2_before = len(set([pos[1] // periods_per_day for pos in self.course_positions[course_2]]))
+            min_days_2 = self.data['min_days_per_course'][course_2]
+            missing_days_before += max(0, min_days_2 - len(set([pos[1] // periods_per_day for pos in self.course_positions[course_2]])))
             course_2_positions = list(self.course_positions[course_2])
-            course_1_positions.append(pos_2)
             course_2_positions.remove(pos_2)
 
-        num_days_1_after = 0
-        num_days_2_after = 0
-        if course_1 != -1:
-            num_days_1_after = len(set([pos[1] // periods_per_day for pos in course_1_positions]))
-        if course_2 != -1:
-            num_days_2_after = len(set([pos[1] // periods_per_day for pos in course_2_positions]))
+        course_2_positions.append(pos_1)
+        course_1_positions.append(pos_2)
 
-        return penalty * (num_days_1_after + num_days_2_after - num_days_1_before - num_days_2_before)
+        if course_1 != -1:
+            missing_days_after += max(0, min_days_1 - len(set([pos[1] // periods_per_day for pos in course_1_positions])))
+        if course_2 != -1:
+            missing_days_after += max(0, min_days_2 - len(set([pos[1] // periods_per_day for pos in course_2_positions])))
+
+        return penalty * (missing_days_after - missing_days_before)
 
 
     def _compactness_delta(self, pos_1, pos_2):
