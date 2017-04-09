@@ -28,30 +28,30 @@ class Timetable(object):
                         break
 
                     if (
-                        self.check_single_conflict_self(course_id, ind) or
-                        self.check_single_availability_self(course_id, ind) or
-                        self.check_single_lecturer_self(course_id, ind)
+                        self.check_single_conflict_old_interface(course_id, ind) or
+                        self.check_single_availability_old_interface(course_id, ind) or
+                        self.check_single_lecturer_old_interface(course_id, ind)
                     ):
                         idcs.append(ind)
                         i += 1
                     else:
                         scheduled = True
-                        self.insert_course(ind, course_id, True)
+                        self.insert_course(ind, course_id)
 
         self.calc_score_total()
 
 
-    def insert_course(self, position, course, init=False):
+    def insert_course(self, position, course):
         self.schedule[position] = course
         self.course_positions[course].append(position)
 
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
-        delta.append(self._capacity_delta(pos_1, pos_2))
-        # delta.append(self._compactness_delta(pos_1, pos_2))
-        delta.append(self._min_days_delta(pos_1, pos_2))
-        delta.append(self._room_delta(pos_1, pos_2))
+        # delta.append(self._capacity_delta(pos_1, pos_2))
+        delta.append(self._compactness_delta(pos_1, pos_2))
+        # delta.append(self._min_days_delta(pos_1, pos_2))
+        # delta.append(self._room_delta(pos_1, pos_2))
 
         return sum(delta)
 
@@ -84,10 +84,10 @@ class Timetable(object):
     def calc_score_total(self, save=True):
         penalty = []
         # penalty.append(self._unscheduled_penalty())
-        penalty.append(self._capacity_penalty())
-        penalty.append(self._min_days_penalty())
-        # penalty.append(self._compactness_penalty())
-        penalty.append(self._room_penalty())
+        # penalty.append(self._capacity_penalty())
+        # penalty.append(self._min_days_penalty())
+        penalty.append(self._compactness_penalty())
+        # penalty.append(self._room_penalty())
 
         if save:
             self.score = sum(penalty)
@@ -168,57 +168,69 @@ class Timetable(object):
         value_before = 0
         value_after = 0
 
-        # _bb - before before
-        # _b  - before
-        #
-        # _a  - after
-        # _aa - after after
+        '''
+            _bb - before before
+            _b  - before
+
+            _a  - after
+            _aa - after after
+        '''
 
         for pos, curricula in zip(pos_list, curricula_list):
-            day_bb = pos[1] - 2 // periods_per_day if pos[1] - 2 >= 0 else -1
-            day_b  = pos[1] - 1 // periods_per_day if pos[1] - 1 >= 0 else -1
-            day    = pos[1] // periods_per_day
-            day_a  = pos[1] + 1 // periods_per_day if pos[1] + 1 < timeslots else -1
-            day_aa = pos[1] + 2 // periods_per_day if pos[1] + 2 < timeslots else -1
+            print self.schedule[pos], curricula
+            day_bb = (pos[1] - 2) // periods_per_day
+            day_b  = (pos[1] - 1) // periods_per_day
+            day    =  pos[1] // periods_per_day
+            day_a  = (pos[1] + 1) // periods_per_day
+            day_aa = (pos[1] + 2) // periods_per_day
 
             # Check timeslot before
             if day_b == day:
-                curricula_b  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-1] if course != -1]
+
+                print 'day_b'
+                curricula_b = [curr for course in self.schedule[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
+                print curricula_b
 
                 if day_bb == day:
-                    curricula_bb = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-2] if course != -1]
+
+                    print 'day_bb'
+                    curricula_bb = [curr for course in self.schedule[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
+                    print curricula_bb,'\n'
 
                     for curriculum in curricula:
-                        if curriculum in curricula_b:
-                            if curriculum not in curricula_bb:
-                                # if curriculum is in day_b but not in day_bb we seclude the course
-                                value_before += 1
+                        if curriculum in curricula_b and curriculum not in curricula_bb:
+                            value_before += 1
                 else:
                     for curriculum in curricula:
                         if curriculum in curricula_b:
-                            # if curriculum is in day_b we seclude it for sure
                             value_before += 1
-
+            print '\n'
 
             #  Check timeslot after
             if day_a == day:
-                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+1] if course != -1]
+
+                print 'day_a'
+                curricula_a = [curr for course in self.schedule[:,pos[1]+1] if course != -1 for curr in self.data["course_curricula"][course]]
+                print curricula_a
 
                 if day_aa == day:
-                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+2] if course != -1]
+
+                    print 'day_aa'
+                    curricula_aa = [curr for course in self.schedule[:,pos[1]+2] if course != -1 for curr in self.data["course_curricula"][course]]
+                    print curricula_aa
 
                     for curriculum in curricula:
-                        if curriculum in curricula_a:
-                            if curriculum not in curricula_aa:
-                                # if curriculum is in day_a but not in day_bb we seclude the course
-                                value_before += 1
+                        if curriculum in curricula_a and curriculum not in curricula_aa:
+                            # if curriculum is in day_a but not in day_bb we seclude the course
+                            value_before += 1
                 else:
                     for curriculum in curricula:
                         if curriculum in curricula_a:
                             # if curriculum is in day_a we seclude it for sure
                             value_before += 1
+            print '\n'
 
-
+        print "values before: ",value_before, '\n'
         # simulate swap
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
@@ -239,52 +251,63 @@ class Timetable(object):
 
 
         for pos, curricula in zip(pos_list, curricula_list):
+            print schedule_copy[pos], curricula
 
-            day_bb = pos[1]-2 // periods_per_day if pos[1] - 2 >= 0 else -1
-            day_b  = pos[1]-1 // periods_per_day if pos[1] - 1 >= 0 else -1
-            day    = pos[1] // periods_per_day
-            day_a  = pos[1]+1 // periods_per_day if pos[1] + 1 < timeslots else -1
-            day_aa = pos[1]+2 // periods_per_day if pos[1] + 2 < timeslots else -1
+            day_bb = (pos[1]-2) // periods_per_day
+            day_b  = (pos[1]-1) // periods_per_day
+            day    =  pos[1] // periods_per_day
+            day_a  = (pos[1]+1) // periods_per_day
+            day_aa = (pos[1]+2) // periods_per_day
 
             # Check timeslot before
             if day_b == day:
-                curricula_b  = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-1] if course != -1]
+
+                print 'day_b'
+                curricula_b = [curr for course in schedule_copy[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
+                print curricula_b
 
                 if day_bb == day:
-                    curricula_bb = [self.data["course_curricula"][course] for course in self.schedule[:,pos1[1]-2] if course != -1]
+
+                    print 'day_bb'
+                    curricula_bb = [curr for course in schedule_copy[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
+                    print curricula_bb
 
                     for curriculum in curricula:
-                        if curriculum in curricula_b:
-                            if curriculum not in curricula_bb:
-                                # if curriculum is in day_b but not in day_bb we seclude the course
-                                value_after += 1
+                        if curriculum in curricula_b and curriculum not in curricula_bb:
+                            # if curriculum is in day_b but not in day_bb we seclude the course
+                            value_after += 1
                 else:
                     for curriculum in curricula:
                         if curriculum in curricula_b:
                             # if curriculum is in day_b we seclude it for sure
                             value_after += 1
 
-
             #  Check timeslot after
             if day_a == day:
-                curricula_a  = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+1] if course != -1]
+
+                print 'day_a'
+                curricula_a = [curr for course in schedule_copy[:,pos[1]+1] if course != -1 for curr in self.data["course_curricula"][course]]
+                print curricula_a
 
                 if day_aa == day:
-                    curricula_aa = [self.data["course_curricula"][course] for course in self.schedule[:,pos[1]+2] if course != -1]
+
+                    print 'day_aa'
+                    curricula_aa = [curr for course in schedule_copy[:,pos[1]+2] if course != -1 for curr in self.data["course_curricula"][course]]
+                    print curricula_aa
 
                     for curriculum in curricula:
-                        if curriculum in curricula_a:
-                            if curriculum not in curricula_aa:
-                                # if curriculum is in day_a but not in day_bb we seclude the course
-                                value_after += 1
+                        if curriculum in curricula_a and curriculum not in curricula_aa:
+                            # if curriculum is in day_a but not in day_bb we seclude the course
+                            value_after += 1
                 else:
                     for curriculum in curricula:
                         if curriculum in curricula_a:
                             # if curriculum is in day_a we seclude it for sure
                             value_after += 1
 
+        print "values after: ",value_after, '\n'
 
-        return value_after - value_before
+        return penalty * (-value_after + value_before)
 
 
     def _room_delta(self, pos_1, pos_2):
@@ -520,13 +543,11 @@ class Timetable(object):
         return value * penalty
 
 
-    def check_single_lecturer_self(self, course, pos):
-        individual = self.schedule
-
+    def check_single_lecturer_old_interface(self, course, pos):
         if course == -1:
             return False
 
-        lecturers_in_slot = [l for c in individual[:,pos[1]] if c!=-1 and c!=course for l in self.data["lecturer_lecture"][c] ]
+        lecturers_in_slot = [l for c in self.schedule[:,pos[1]] if c!=-1 for l in self.data["lecturer_lecture"][c] ]
 
         if self.data["lecturer_lecture"][course][0] in lecturers_in_slot:
             return True
@@ -549,17 +570,16 @@ class Timetable(object):
             return False
 
 
-    def check_single_conflict_self(self, course, pos):
-        individual = self.schedule
-
+    def check_single_conflict_old_interface(self, course, pos):
         if course == -1:
             return False
 
         course_conflicts = self.data["curric_conflict"][course]
-        if len([c for c in individual[:,pos[1]] if c in course_conflicts])>1:
-            return True
-        else:
-            return False
+        for c in self.schedule[:,pos[1]]:
+            if c in course_conflicts:
+                return True
+
+        return False
 
 
     def check_single_conflict(self, pos_1, pos_2):
@@ -577,7 +597,7 @@ class Timetable(object):
         return False
 
 
-    def check_single_availability_self(self, course, pos):
+    def check_single_availability_old_interface(self, course, pos):
         timeslot = pos[1]
 
         if course == -1:

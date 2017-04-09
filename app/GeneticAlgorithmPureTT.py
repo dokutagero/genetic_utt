@@ -20,11 +20,17 @@ class GeneticAlgorithmPureTT():
         self.initialize_population()
 
         self.best_individual = None
+        self.print_population(self.population[0].schedule)
 
 
     def genetic_simulation(self):
         init_time = time.time()
         iteration = 0
+
+        score_list = [individual.score for individual in self.population]
+        best_individual = score_list.index(min(score_list))
+        self.best_individual = self.population[best_individual]
+        print "Best score after initialization: ", self.best_individual.score
 
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
@@ -37,15 +43,13 @@ class GeneticAlgorithmPureTT():
             self.population[w2] = o2_prime
 
             iteration += 1
-        #print 'Best individual iteration ', iteration
-        # best_individual = self.fitness_model.get_best(self.population)
+
         score_list = [individual.score for individual in self.population]
         best_individual = score_list.index(min(score_list))
 
-        # print 'BEEEEEEEEEST'
-        # print self.fitness_model.evaluate(self.population[best_individual])
         self.best_individual = self.population[best_individual]
         self.print_population(self.best_individual.schedule)
+
         print "Best score: ", self.best_individual.score
         print 'The score should be: ', self.best_individual.calc_score_total(save=False)
         print 'Iterations: ', iteration
