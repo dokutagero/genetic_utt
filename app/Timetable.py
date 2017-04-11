@@ -48,21 +48,17 @@ class Timetable(object):
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
-        # delta.append(self._capacity_delta(pos_1, pos_2))
+        delta.append(self._capacity_delta(pos_1, pos_2))
         delta.append(self._compactness_delta(pos_1, pos_2))
-        # delta.append(self._min_days_delta(pos_1, pos_2))
-        # delta.append(self._room_delta(pos_1, pos_2))
+        delta.append(self._min_days_delta(pos_1, pos_2))
+        delta.append(self._room_delta(pos_1, pos_2))
 
         return sum(delta)
 
 
     def swap_courses(self, pos_1, pos_2):
-        print 'real score before: ', self.calc_score_total(save=False)
-        print 'delta score before: ', self.score
         tmp = self._delta_eval(pos_1, pos_2)
         self.score = self.score + tmp
-        print "delta: ", tmp
-        print 'delta score after: ', self.score
 
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
@@ -78,16 +74,13 @@ class Timetable(object):
             self.course_positions[course_2].remove(pos_2)
             self.course_positions[course_2].append(pos_1)
 
-        print 'real score after: ', self.calc_score_total(save=False)
-        print '---------------\n'
-
     def calc_score_total(self, save=True):
         penalty = []
-        # penalty.append(self._unscheduled_penalty())
-        # penalty.append(self._capacity_penalty())
-        # penalty.append(self._min_days_penalty())
+        penalty.append(self._unscheduled_penalty())
+        penalty.append(self._capacity_penalty())
+        penalty.append(self._min_days_penalty())
         penalty.append(self._compactness_penalty())
-        # penalty.append(self._room_penalty())
+        penalty.append(self._room_penalty())
 
         if save:
             self.score = sum(penalty)
@@ -168,6 +161,8 @@ class Timetable(object):
             curricula_2 = set(self.data["course_curricula"][course_2])
         courses_courricula = curricula_1.union(curricula_2)
 
+        already_penalized = []
+
         value_before = 0
         value_after = 0
 
@@ -208,19 +203,24 @@ class Timetable(object):
                 curricula_c = [curr for course in self.schedule[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
 
                 for curriculum in courses_courricula:
-                    if curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
+                    if (pos[1] - 1, curriculum) not in already_penalized and curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
                         value_before += 1
+                        already_penalized.append((pos[1] - 1, curriculum))
 
-                    if curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
+                    if (pos[1] , curriculum) not in already_penalized and curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
                         value_before += 1
+                        already_penalized.append((pos[1] , curriculum))
 
-                    if curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
+                    if (pos[1] + 1, curriculum) not in already_penalized and curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
                         value_before += 1
+                        already_penalized.append((pos[1] + 1, curriculum))
 
             # simulate swap
             schedule_copy = self.schedule.copy()
             schedule_copy[pos_1] = course_2
             schedule_copy[pos_2] = course_1
+
+            already_penalized = []
 
             for pos in positions:
 
@@ -248,52 +248,19 @@ class Timetable(object):
                 curricula_c = [curr for course in schedule_copy[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
 
                 for curriculum in courses_courricula:
-                    if curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
+                    if (pos[1] - 1, curriculum) not in already_penalized and curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
                         value_after += 1
+                        already_penalized.append((pos[1] - 1, curriculum))
 
-                    if curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
+                    if (pos[1] , curriculum) not in already_penalized and curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
                         value_after += 1
+                        already_penalized.append((pos[1] , curriculum))
 
-                    if curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
+                    if (pos[1] + 1, curriculum) not in already_penalized and curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
                         value_after += 1
-
-                # for curriculum in curricula_b:
-                #     if curriculum not in curricula_c and curriculum not in curricula_bb:
-                #         value_after += 1
-                #
-                # for curriculum in curricula_c:
-                #     if curriculum not in curricula_b and curriculum not in curricula_a:
-                #         value_after += 1
-                #
-                # for curriculum in curricula_a:
-                #     if curriculum not in curricula_c and curriculum not in curricula_aa:
-                #         value_after += 1
+                        already_penalized.append((pos[1] + 1, curriculum))
 
 
-                # for curriculum in curricula_b:
-                #     present = {'bb':0, 'b':1, 'c':0, 'a':0, 'aa':0}
-                #
-                #     if curriculum in curricula_c:
-                #         present['c'] = 1
-                #
-                #     if day_b == day and curriculum in curricula_b:
-                #         present['b']  = 1
-                #     if day_bb == day and curriculum in curricula_bb:
-                #         present['bb'] = 1
-                #
-                #     if day_a == day and curriculum in curricula_a:
-                #         present['a']  = 1
-                #     if day_aa == day and curriculum in curricula_aa:
-                #         present['aa'] = 1
-                #
-                #     if not present['c'] and present['b'] and not present['bb']:
-                #         value_after += 1
-                #     if not present['c'] and present['a'] and not present['aa']:
-                #         value_after += 1
-                #     if present['c'] and not present['a'] and not present['b']:
-                #         value_after += 1
-
-        print 'curricula: ',courses_courricula, curricula_1, curricula_2
         return penalty * ( value_after - value_before)
 
 
