@@ -159,6 +159,15 @@ class Timetable(object):
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
 
+        curricula_1 = set()
+        curricula_2 = set()
+
+        if course_1 != -1:
+            curricula_1 = set(self.data["course_curricula"][course_1])
+        if course_2 != -1:
+            curricula_2 = set(self.data["course_curricula"][course_2])
+        courses_courricula = curricula_1.union(curricula_2)
+
         value_before = 0
         value_after = 0
 
@@ -187,6 +196,7 @@ class Timetable(object):
 
                 if day_b == day:
                     curricula_b = [curr for course in self.schedule[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
+                    # curricula_b =
                 if day_bb == day:
                     curricula_bb = [curr for course in self.schedule[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
 
@@ -197,16 +207,14 @@ class Timetable(object):
 
                 curricula_c = [curr for course in self.schedule[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
 
-                for curriculum in curricula_b:
-                    if curriculum not in curricula_c and curriculum not in curricula_bb:
+                for curriculum in courses_courricula:
+                    if curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
                         value_before += 1
 
-                for curriculum in curricula_c:
-                    if curriculum not in curricula_b and curriculum not in curricula_a:
+                    if curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
                         value_before += 1
 
-                for curriculum in curricula_a:
-                    if curriculum not in curricula_c and curriculum not in curricula_aa:
+                    if curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
                         value_before += 1
 
             # simulate swap
@@ -239,17 +247,27 @@ class Timetable(object):
 
                 curricula_c = [curr for course in schedule_copy[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
 
-                for curriculum in curricula_b:
-                    if curriculum not in curricula_c and curriculum not in curricula_bb:
+                for curriculum in courses_courricula:
+                    if curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
                         value_after += 1
 
-                for curriculum in curricula_c:
-                    if curriculum not in curricula_b and curriculum not in curricula_a:
+                    if curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
                         value_after += 1
 
-                for curriculum in curricula_a:
-                    if curriculum not in curricula_c and curriculum not in curricula_aa:
+                    if curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
                         value_after += 1
+
+                # for curriculum in curricula_b:
+                #     if curriculum not in curricula_c and curriculum not in curricula_bb:
+                #         value_after += 1
+                #
+                # for curriculum in curricula_c:
+                #     if curriculum not in curricula_b and curriculum not in curricula_a:
+                #         value_after += 1
+                #
+                # for curriculum in curricula_a:
+                #     if curriculum not in curricula_c and curriculum not in curricula_aa:
+                #         value_after += 1
 
 
                 # for curriculum in curricula_b:
@@ -275,7 +293,7 @@ class Timetable(object):
                 #     if present['c'] and not present['a'] and not present['b']:
                 #         value_after += 1
 
-
+        print 'curricula: ',courses_courricula, curricula_1, curricula_2
         return penalty * ( value_after - value_before)
 
 
