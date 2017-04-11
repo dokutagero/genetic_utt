@@ -191,7 +191,6 @@ class Timetable(object):
 
                 if day_b == day:
                     curricula_b = [curr for course in self.schedule[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
-                    # curricula_b =
                 if day_bb == day:
                     curricula_bb = [curr for course in self.schedule[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
 
@@ -429,44 +428,7 @@ class Timetable(object):
         value = sum([len(curricula['curricula']) for curricula in secluded.values()])
 
         return value * penalty
-        """
-        cube = np.ones((individual.shape[0], individual.shape[1], max(self.data["curricula"].iteritems(), key=operator.itemgetter(1))[1])) * -2
-
-        for row in range(individual.shape[0]):
-            for col in range(individual.shape[1]):
-                if individual[row,col] != -1:
-                    for idx,curriculum in enumerate(self.data["course_curricula"][individual[row,col]]):
-                        cube[row,col,idx] = curriculum
-
-        secluded_counter = 0
-        # First column
-        col2_union = reduce(np.union1d, cube[:,1,:])
-        for idx in range(individual.shape[0]):
-            course_unique = set(cube[idx,0,:])
-            intersec = np.intersect1d(course_unique, col2_union)
-            secluded_counter += len(course_unique) - len(intersec)
-
-        # Middle columns
-        for col in range(1, individual.shape[1] - 1):
-            previous_col_union = reduce(np.union1d, cube[:,col-1,:])
-            next_col_union = reduce(np.union1d, cube[:,col+1,:])
-            col_union = np.union1d(previous_col_union, next_col_union)
-
-            for idx in range(individual.shape[0]):
-                course_unique = set(cube[idx,col,:])
-                intersec = np.intersect1d(course_unique, col_union)
-                secluded_counter += len(course_unique) - len(intersec)
-
-        # Last column
-        penultimate_col_union = reduce(np.union1d, cube[:,-2,:])
-        for idx in range(individual.shape[0]):
-            course_unique = set(cube[idx,-1,:])
-            intersec = np.intersect1d(course_unique, penultimate_col_union)
-            secluded_counter += len(course_unique) - len(intersec)
-
-        return secluded_counter * penalty """
-
-
+        
 
     def _room_penalty(self):
         """

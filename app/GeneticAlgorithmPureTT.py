@@ -67,9 +67,7 @@ class GeneticAlgorithmPureTT():
 
     def selection(self, best_selection=True):
         individual_indices = np.random.choice(range(len(self.population)), size=4, replace=False)
-        # pdb.set_trace()
         fitness_values = [self.population[ind].score for ind in individual_indices]
-        # fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
 
         if best_selection:
             return (individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
