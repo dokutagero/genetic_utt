@@ -48,21 +48,18 @@ class Timetable(object):
 
     def _delta_eval(self, pos_1, pos_2):
         delta = []
-        # delta.append(self._capacity_delta(pos_1, pos_2))
+        delta.append(self._capacity_delta(pos_1, pos_2))
         delta.append(self._compactness_delta(pos_1, pos_2))
-        # delta.append(self._min_days_delta(pos_1, pos_2))
-        # delta.append(self._room_delta(pos_1, pos_2))
+        delta.append(self._min_days_delta(pos_1, pos_2))
+        delta.append(self._room_delta(pos_1, pos_2))
 
         return sum(delta)
 
 
     def swap_courses(self, pos_1, pos_2):
-        print 'real score before: ', self.calc_score_total(save=False)
-        print 'delta score before: ', self.score
-        tmp = self._delta_eval(pos_1, pos_2)
-        self.score = self.score + tmp
-        print "delta: ", tmp
-        print 'delta score after: ', self.score
+
+        total_delta = self._delta_eval(pos_1, pos_2)
+        self.score = self.score + total_delta
 
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
@@ -78,19 +75,15 @@ class Timetable(object):
             self.course_positions[course_2].remove(pos_2)
             self.course_positions[course_2].append(pos_1)
 
-        print 'real score after: ', self.calc_score_total(save=False)
-        print '---------------\n'
-        if self.calc_score_total(save=False) != self.score:
-            print pos_1, pos_2
-            print self.schedule
+
 
     def calc_score_total(self, save=True):
         penalty = []
-        # penalty.append(self._unscheduled_penalty())
-        # penalty.append(self._capacity_penalty())
-        # penalty.append(self._min_days_penalty())
+        penalty.append(self._unscheduled_penalty())
+        penalty.append(self._capacity_penalty())
+        penalty.append(self._min_days_penalty())
         penalty.append(self._compactness_penalty())
-        # penalty.append(self._room_penalty())
+        penalty.append(self._room_penalty())
 
         if save:
             self.score = sum(penalty)
@@ -306,9 +299,6 @@ class Timetable(object):
                                 value_after += 1
                                 already_penalized.append((ts,q))
 
-
-        print curric_list
-        print pos_1, pos_2
 
         return penalty * (value_after - value_before)
 

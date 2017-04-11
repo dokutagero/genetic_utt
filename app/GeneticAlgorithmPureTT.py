@@ -51,7 +51,7 @@ class GeneticAlgorithmPureTT():
         self.print_population(self.best_individual.schedule)
 
         print "Best score: ", self.best_individual.score
-        print 'The score should be: ', self.best_individual.calc_score_total(save=False)
+        # print 'The score should be: ', self.best_individual.calc_score_total(save=False)
         print 'Iterations: ', iteration
 
 
