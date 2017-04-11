@@ -81,8 +81,17 @@ class GeneticAlgorithmPureTT():
 
     def recombination(self, Parent1, Parent2):
         # We obtain the random 2D cuts for each parent.
-        row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
-        col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
+        # row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
+        # col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
+
+        vertical_max_size = Parent1.schedule.shape[0] // 2
+        horizontal_max_size = Parent1.schedule.shape[1] // 6
+
+        row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
+        row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)
+
+        col_cut1 = np.random.choice(range(Parent1.schedule.shape[1]), size=1)
+        col_cut2 = min(np.random.choice(range(col_cut1, col_cut1 + horizontal_max_size), size=1), Parent1.schedule.shape[1]-1)
 
         # Before performing the PMX crossover, the offspring is equal to the parents.
         offspring1 = copy.deepcopy(Parent1)

@@ -59,21 +59,22 @@ class Timetable(object):
     def swap_courses(self, pos_1, pos_2):
 
         total_delta = self._delta_eval(pos_1, pos_2)
-        self.score = self.score + total_delta
+        if total_delta < 0:
+            self.score = self.score + total_delta
 
-        course_1 = self.schedule[pos_1]
-        course_2 = self.schedule[pos_2]
+            course_1 = self.schedule[pos_1]
+            course_2 = self.schedule[pos_2]
 
-        self.schedule[pos_1] = course_2
-        self.schedule[pos_2] = course_1
+            self.schedule[pos_1] = course_2
+            self.schedule[pos_2] = course_1
 
-        if course_1 != -1:
-            self.course_positions[course_1].remove(pos_1)
-            self.course_positions[course_1].append(pos_2)
+            if course_1 != -1:
+                self.course_positions[course_1].remove(pos_1)
+                self.course_positions[course_1].append(pos_2)
 
-        if course_2 != -1:
-            self.course_positions[course_2].remove(pos_2)
-            self.course_positions[course_2].append(pos_1)
+            if course_2 != -1:
+                self.course_positions[course_2].remove(pos_2)
+                self.course_positions[course_2].append(pos_1)
 
 
 
