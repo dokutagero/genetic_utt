@@ -80,6 +80,9 @@ class Timetable(object):
 
         print 'real score after: ', self.calc_score_total(save=False)
         print '---------------\n'
+        if self.calc_score_total(save=False) != self.score:
+            print pos_1, pos_2
+            print self.schedule
 
     def calc_score_total(self, save=True):
         penalty = []
@@ -163,164 +166,131 @@ class Timetable(object):
             curric_pos1 = [q for q in self.data['course_curricula'][self.schedule[pos_1]]]
         if self.schedule[pos_2] != -1:
             curric_pos2 = [q for q in self.data['course_curricula'][self.schedule[pos_2]]]
+        # Unique curricula for both courses to swap.
+        # Empty if both courses are -1
         curric_list = set(curric_pos1 + curric_pos2)
 
-        print curric_list
 
-
-        for room, ts in [pos_1, pos_2]:
-            # print room,ts
-            # print pos_1
-            # print pos_2
-            # if self.schedule[(room,ts)] == -1:
-                # continue
+        # Check penalty before swap
+        for room,ts in [pos_1, pos_2]:
             # True/false vector determining if previos and post ts belong to same days
-            slide_limits = [self.belong_same_day(ts, ts_prime) for ts_prime in [ts-2, ts-1, ts, ts+1, ts+2]]
-            # print slide_limits
-            slide_limits = [sum(slide_limits[0:2]), sum(slide_limits[3:])]
-            # print slide_limits
-            if slide_limits[0] == 0:
-                range_limit = range(1,2)
-            elif slide_limits[1] == 0:
-                range_limit = range(-1,0)
-            else:
-                range_limit = range(-1*(slide_limits[0]-1), 1*(slide_limits[1]))
-            # print range_limit
-
-
-
-
-            # Check before swap penalty
+            day_limits = [self.belong_same_day(ts, ts_prime) for ts_prime in [ts-2, ts-1, ts, ts+1, ts+2]]
             for q in curric_list:
-                print q, ' from: ', curric_list
+                already_paid = False
+                q_ts = [qc for c in self.schedule[:,(ts)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                # If previous and next day are within same day and within matrix limits
+                if day_limits[2-1]:
+                    q_ts_previous = [qc for c in self.schedule[:,(ts-1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                    if q not in q_ts and q in q_ts_previous:
+                        # If two ts before within same day and within matrix limits
+                        if day_limits[2-2]:
+                            q_ts_previous2 = [qc for c in self.schedule[:,(ts-2)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_ts_previous2:
+                                value_before += 1
+                        else:
+                            #paguem
+                            value_before += 1
+                    elif q in q_ts and q not in q_ts_previous:
+                        if day_limits[2+1]:
+                            q_ts_post = [qc for c in self.schedule[:,(ts+1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_ts_post:
+                                value_before += 1
+                                already_paid = True
+                        else:
+                            value_before += 1
+
+                if day_limits[2+1]:
+                    q_ts_post = [qc for c in self.schedule[:,(ts+1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                    if q not in q_ts and q in q_ts_post:
+                        if day_limits[2+2]:
+                            q_ts_post2 = [qc for c in self.schedule[:,(ts+2)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_ts_post2:
+                                value_before += 1
+                        else:
+                            value_before += 1
+                    elif q in q_ts and q not in q_ts_post:
+                        if day_limits[2-1]:
+                            q_ts_previous = [qc for c in self.schedule[:,(ts-1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            # if not already_paid:
+                            if q not in q_ts_previous and not already_paid:
+                                value_before += 1
+                        else:
+                            value_before += 1
 
 
-                for val in range_limit:
-                        # If we are not out of bounds
 
-                        q_in_current = [qc for c in self.schedule[:,(ts+val)] if c!=-1 for qc in self.data['course_curricula'][c]]
-                        # If given curricula in current slot and not in the previous
-                        if val < 0:
-                            if (ts+val)+1 < self.schedule.shape[1]:
-                                q_in_post = [qc for c in self.schedule[:,(ts+val)+1] if c!=-1 for qc in self.data['course_curricula'][c]]
-
-                                if q in q_in_post and q not in q_in_current:
-                                    if (ts+val)+2 < self.schedule.shape[1]:
-                                        q_in_post2 = [qc for c in self.schedule[:,(ts+val)+2] if c!=-1 for qc in self.data['course_curricula'][c]]
-                                        if q not in q_in_post2:
-                                            value_before += 1
-                                    else:
-                                        value_before += 1
-                                    # tirar una mes endavant i comprobar
-                                elif q not in q_in_post and q in q_in_current:
-                                    if (ts+val)-1 >= 0:
-                                        q_in_previous = [qc for c in self.schedule[:,(ts+val)-1]  if c!=-1 for qc in self.data['course_curricula'][c]]
-                                        if q not in q_in_previous:
-                                            value_before += 1
-                                    else:
-                                        value_before += 1
-
-                        elif val > 0:
-                            if (ts+val)-1 >= 0:
-                                q_in_previous = [qc for c in self.schedule[:,(ts+val)-1] if c!=-1 for qc in self.data['course_curricula'][c]]
-                            if q in q_in_previous and q not in q_in_current:
-                                if (ts+val)-2 >= 0:
-                                    # tirar una mes darrere i comprobar
-                                    q_in_previous2 = [qc for c in self.schedule[:,(ts+val)-2] if c!=-1 for qc in self.data['course_curricula'][c]]
-                                    if q not in q_in_previous2:
-                                        value_before += 1
-                                else:
-                                    value_before += 1
-                            elif q not in q_in_previous and q in q_in_current:
-                                if (ts+val)+1 < self.schedule.shape[1]:
-                                    # Check next time slot
-                                    q_in_post = [qc for c in self.schedule[:,(ts+val)+1] if c!=-1 for qc in self.data['course_curricula'][c]]
-                                    if q not in q_in_post:
-                                        value_before += 1
-                                else:
-                                    value_before += 1
-                    # else:
-                    #     if (ts+val)+1 < self.schedule.shape[1]:
-                    #         q_in_current = [self.data['course_curricula'][c] for c in self.schedule[:,(ts+val)] if c!=-1]
-                    #         q_in_post = [self.data['course_curricula'][c] for c in self.schedule[:,(ts+val)+1] if c!=-1]
-                    #         if q not in q_in_post and q in q_in_current:
-                    #             value_before += 1
-
-
+        tt_copy = np.copy(self.schedule)
         tmp = tt_copy[pos_1]
         tt_copy[pos_1] = self.schedule[pos_2]
         tt_copy[pos_2] = tmp
 
-        # Check before swap penalty
-        for (room, ts) in [pos_1, pos_2]:
+        already_penalized = []
+        # Check penalty after swap
+        for room,ts in [pos_1, pos_2]:
             # True/false vector determining if previos and post ts belong to same days
-            slide_limits = [self.belong_same_day(ts, ts_prime) for ts_prime in [ts-2, ts-1, ts, ts+1, ts+2]]
-            slide_limits = [sum(slide_limits[0:2]), sum(slide_limits[3:])]
-            if slide_limits[0] == 0:
-                range_limit = range(1,2)
-            elif slide_limits[1] == 0:
-                range_limit = range(-1,0)
-            else:
-                range_limit = range(-1*(slide_limits[0]-1), 1*(slide_limits[1]))
-
-
+            day_limits = [self.belong_same_day(ts, ts_prime) for ts_prime in [ts-2, ts-1, ts, ts+1, ts+2]]
             for q in curric_list:
-
-                for val in range_limit:
-
-                        # If we are not out of bounds
-
-                        q_in_current = [qc for c in tt_copy[:,(ts+val)] if c!=-1 for qc in self.data['course_curricula'][c]]
-                        # If given curricula in current slot and not in the previous
-                        if val < 0:
-                            if (ts+val)+1 < tt_copy.shape[1]:
-                                q_in_post = [qc for c in tt_copy[:,(ts+val)+1] if c!=-1 for qc in self.data['course_curricula'][c]]
-
-                                if q in q_in_post and q not in q_in_current:
-                                    if  (ts+val)+2 < tt_copy.shape[1]:
-                                        q_in_post2 = [qc for c in tt_copy[:,(ts+val)+2] if c!=-1 for qc in self.data['course_curricula'][c]]
-                                        if q not in q_in_post2:
-                                            value_after += 1
-                                    else:
-                                        value_after += 1
-                                    # tirar una mes endavant i comprobar
-                                elif q not in q_in_post and q in q_in_current:
-                                    if (ts+val)-1 >= 0:
-                                        q_in_previous = [qc for c in tt_copy[:,(ts+val)-1]  if c!=-1 for qc in self.data['course_curricula'][c]]
-                                        if q not in q_in_previous:
-                                            value_after += 1
-                                    else:
-                                        value_after += 1
-
-                        elif val > 0:
-                            if (ts+val)-1 >= 0:
-                                q_in_previous = [qc for c in tt_copy[:,(ts+val)-1] if c!=-1 for qc in self.data['course_curricula'][c]]
-                            if q in q_in_previous and q not in q_in_current:
-                                if (ts+val)-2 >= 0:
-                                    # tirar una mes darrere i comprobar
-                                    q_in_previous2 = [qc for c in tt_copy[:,(ts+val)-2] if c!=-1 for qc in self.data['course_curricula'][c]]
-                                    if q not in q_in_previous2:
-                                        value_after += 1
-                                else:
+                already_paid = False
+                q_ts = [qc for c in tt_copy[:,(ts)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                # If previous and next day are within same day and within matrix limits
+                if day_limits[2-1]:
+                    q_ts_previous = [qc for c in tt_copy[:,(ts-1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                    if q not in q_ts and q in q_ts_previous:
+                        # If two ts before within same day and within matrix limits
+                        if day_limits[2-2]:
+                            q_ts_previous2 = [qc for c in tt_copy[:,(ts-2)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_ts_previous2:
+                                if (ts-1, q) not in already_penalized:
                                     value_after += 1
-                            elif q not in q_in_previous and q in q_in_current:
-                                if (ts+val)+1 < tt_copy.shape[1]:
-                                    # Check next time slot
-                                    q_in_post = [qc for c in tt_copy[:,(ts+val)+1] if c!=-1 for qc in self.data['course_curricula'][c]]
-                                    if q not in q_in_post:
-                                        value_after += 1
-                                else:
+                                    already_penalized.append((ts-1,q))
+                        else:
+                            #paguem
+                            if (ts-1, q) not in already_penalized:
+                                value_after += 1
+                                already_penalized.append((ts-1,q))
+                    elif q in q_ts and q not in q_ts_previous:
+                        if day_limits[2+1]:
+                            q_ts_post = [qc for c in tt_copy[:,(ts+1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_ts_post:
+                                if (ts, q) not in already_penalized:
                                     value_after += 1
-                        # else:
-                        #     if (ts+val)+1 < tt_copy.shape[1]:
-                        #         if q not in tt_copy[(room, (ts+val)+1)] and q in tt_copy[(room, (ts+val))]:
-                        #             value_after += 1
+                                    already_penalized.append((ts,q))
+                                    #already_paid = True
+                        else:
+                            if (ts,q) not in already_penalized:
+                                value_after += 1
+                                already_penalized.append((ts,q))
+
+                if day_limits[2+1]:
+                    q_ts_post = [qc for c in tt_copy[:,(ts+1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                    if q not in q_ts and q in q_ts_post:
+                        if day_limits[2+2]:
+                            q_ts_post2 = [qc for c in tt_copy[:,(ts+2)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_ts_post2:
+                                if (ts+1,q) not in already_penalized:
+                                    value_after += 1
+                                    already_penalized.append((ts+1,q))
+                        else:
+                            if (ts+1,q) not in already_penalized:
+                                value_after += 1
+                                already_penalized.append((ts+1,q))
+                    elif q in q_ts and q not in q_ts_post:
+                        if day_limits[2-1]:
+                            q_ts_previous = [qc for c in tt_copy[:,(ts-1)] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            # if not already_paid:
+                            if q not in q_ts_previous:# and not already_paid:
+                                if (ts,q) not in already_penalized:
+                                    value_after += 1
+                                    already_penalized.append((ts,q))
+                        else:
+                            if (ts,q) not in already_penalized:
+                                value_after += 1
+                                already_penalized.append((ts,q))
 
 
         print curric_list
-        print 'index to swap: ', pos_1, pos_2
-        print 'value original: ', self.schedule[pos_1], self.schedule[pos_2]
-        print 'values swapped: ', tt_copy[pos_1], tt_copy[pos_2] 
+        print pos_1, pos_2
+
         return penalty * (value_after - value_before)
 
     def belong_same_day(self,ts_1, ts_2):
