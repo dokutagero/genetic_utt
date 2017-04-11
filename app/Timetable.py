@@ -171,6 +171,7 @@ class Timetable(object):
         curric_list = set(curric_pos1 + curric_pos2)
 
 
+        already_penalized = []
         # Check penalty before swap
         for room,ts in [pos_1, pos_2]:
             # True/false vector determining if previos and post ts belong to same days
@@ -186,18 +187,26 @@ class Timetable(object):
                         if day_limits[2-2]:
                             q_ts_previous2 = [qc for c in self.schedule[:,(ts-2)] if c!=-1 for qc in self.data['course_curricula'][c]]
                             if q not in q_ts_previous2:
-                                value_before += 1
+                                if (ts-1, q) not in already_penalized:
+                                    value_before += 1
+                                    already_penalized.append((ts-1,q))
                         else:
                             #paguem
-                            value_before += 1
+                            if (ts-1, q) not in already_penalized:
+                                value_before += 1
+                                already_penalized.append((ts-1,q))
                     elif q in q_ts and q not in q_ts_previous:
                         if day_limits[2+1]:
                             q_ts_post = [qc for c in self.schedule[:,(ts+1)] if c!=-1 for qc in self.data['course_curricula'][c]]
                             if q not in q_ts_post:
-                                value_before += 1
-                                already_paid = True
+                                if (ts,q) not in already_penalized:
+                                    value_before += 1
+                                    #already_paid = True
+                                    already_penalized.append((ts,q))
                         else:
-                            value_before += 1
+                            if (ts,q) not in already_penalized:
+                                value_before += 1
+                                already_penalized.append((ts,q))
 
                 if day_limits[2+1]:
                     q_ts_post = [qc for c in self.schedule[:,(ts+1)] if c!=-1 for qc in self.data['course_curricula'][c]]
@@ -205,17 +214,26 @@ class Timetable(object):
                         if day_limits[2+2]:
                             q_ts_post2 = [qc for c in self.schedule[:,(ts+2)] if c!=-1 for qc in self.data['course_curricula'][c]]
                             if q not in q_ts_post2:
-                                value_before += 1
+                                if (ts+1,q) not in already_penalized:
+                                    value_before += 1
+                                    already_penalized.append((ts+1,q))
                         else:
-                            value_before += 1
+                            if (ts+1,q) not in already_penalized:
+                                value_before += 1
+                                already_penalized.append((ts+1,q))
+
                     elif q in q_ts and q not in q_ts_post:
                         if day_limits[2-1]:
                             q_ts_previous = [qc for c in self.schedule[:,(ts-1)] if c!=-1 for qc in self.data['course_curricula'][c]]
                             # if not already_paid:
-                            if q not in q_ts_previous and not already_paid:
-                                value_before += 1
+                            if q not in q_ts_previous:# and not already_paid:
+                                if (ts,q) not in already_penalized:
+                                    value_before += 1
+                                    already_penalized.append((ts,q))
                         else:
-                            value_before += 1
+                            if (ts,q) not in already_penalized:
+                                value_before += 1
+                                already_penalized.append((ts,q))
 
 
 
@@ -248,6 +266,7 @@ class Timetable(object):
                             if (ts-1, q) not in already_penalized:
                                 value_after += 1
                                 already_penalized.append((ts-1,q))
+
                     elif q in q_ts and q not in q_ts_previous:
                         if day_limits[2+1]:
                             q_ts_post = [qc for c in tt_copy[:,(ts+1)] if c!=-1 for qc in self.data['course_curricula'][c]]
@@ -274,6 +293,7 @@ class Timetable(object):
                             if (ts+1,q) not in already_penalized:
                                 value_after += 1
                                 already_penalized.append((ts+1,q))
+
                     elif q in q_ts and q not in q_ts_post:
                         if day_limits[2-1]:
                             q_ts_previous = [qc for c in tt_copy[:,(ts-1)] if c!=-1 for qc in self.data['course_curricula'][c]]
