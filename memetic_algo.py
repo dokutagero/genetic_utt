@@ -57,8 +57,8 @@ if enable_profiler:
 data = load_data.load(sys.argv[1:])
 fitness_model = fftt(data)
 #
-mutation_prob = 0.02
-pop_size = 20
+mutation_prob = 0.2
+pop_size = 10
 ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
                             fitness_model=fitness_model)
 ga.genetic_simulation()
