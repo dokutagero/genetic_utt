@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import itemfreq
+import random
 
 
 class Timetable(object):
@@ -44,6 +45,21 @@ class Timetable(object):
             self.course_positions[-1].append((room,ts))
 
         self.calc_score_total()
+
+
+    def room_hill_climb(self):
+
+        num_rooms = self.schedule.shape[0]
+        for col in range(self.schedule.shape[1]):
+            for random_room in random.sample(range(0,num_rooms), 2):
+                room_to_swap = random.randint(0,num_rooms-1)
+                while(random_room == room_to_swap):
+                    room_to_swap = random.randint(0,num_rooms-1)
+
+                if self._capacity_delta((random_room,col), (room_to_swap,col)) < 0:
+                    self.swap_courses((random_room,col), (room_to_swap,col))
+
+
 
 
     def insert_course(self, position, course):

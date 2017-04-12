@@ -36,6 +36,9 @@ class GeneticAlgorithmPureTT():
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
+            if iteration%100==0:
+                self.population[p1].room_hill_climb()
+                self.population[p2].room_hill_climb()
             o1, o2 = self.recombination(self.population[p1], self.population[p2])
             # o1, o2 = self.population[p1], self.population[p2]
             o1_prime, o2_prime = self.mutation((o1, o2))
