@@ -85,13 +85,20 @@ class GeneticAlgorithmPureTT():
         # col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
 
         vertical_max_size = Parent1.schedule.shape[0] // 2
-        horizontal_max_size = Parent1.schedule.shape[1] // 6
+        horizontal_max_size = Parent1.schedule.shape[1] // 3
 
-        row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
-        row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)
+        # row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
+        # row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)
+        #
+        # col_cut1 = np.random.choice(range(Parent1.schedule.shape[1]), size=1)
+        # col_cut2 = min(np.random.choice(range(col_cut1, col_cut1 + horizontal_max_size), size=1), Parent1.schedule.shape[1]-1)
 
-        col_cut1 = np.random.choice(range(Parent1.schedule.shape[1]), size=1)
-        col_cut2 = min(np.random.choice(range(col_cut1, col_cut1 + horizontal_max_size), size=1), Parent1.schedule.shape[1]-1)
+        row_cut1 = random.randint(0, Parent1.schedule.shape[0]-1)
+        # Modify row_cut+1 if we want to avoid the option of selecting vectors instead of submatrices
+        row_cut2 = min(random.randint(row_cut1, row_cut1 + vertical_max_size), Parent1.schedule.shape[0]-1)
+
+        col_cut1 = random.randint(0, Parent1.schedule.shape[1]-1)
+        col_cut2 = min(random.randint(col_cut1, col_cut1 + horizontal_max_size), Parent1.schedule.shape[1]-1)
 
         # Before performing the PMX crossover, the offspring is equal to the parents.
         offspring1 = copy.deepcopy(Parent1)
@@ -102,29 +109,47 @@ class GeneticAlgorithmPureTT():
         # offspring1 is copy of Parent2 and offspring2 is copy of Parent1
         # This is the reason of having them in opposite orders in the next for.
         for child, parent in zip(offspring, [Parent2, Parent1]):
+            swap_counter = 0
             for r in range(row_cut1, row_cut2 + 1):
                 for c in range(col_cut1, col_cut2 + 1):
                     parent_course2swap = parent.schedule[r,c]
                     child_course2swap = child.schedule[r,c]
+                    scores = []
+                    positions = []
 
-                    if parent_course2swap != -1:
-                        idcs_child_candidates = child.course_positions[parent_course2swap]
-                        # If there are scheduled courses.
-                        if idcs_child_candidates:
-                            for position, idx_candidate in enumerate(idcs_child_candidates):
-                                if(
-                                child.check_single_conflict(idx_candidate, (r, c)) or
-                                child.check_single_conflict((r, c), idx_candidate) or
-                                child.check_single_availability((r,c), idx_candidate[1]) or
-                                child.check_single_availability(idx_candidate, c) or
-                                child.check_single_lecturer((r,c), idx_candidate) or
-                                child.check_single_lecturer(idx_candidate, (r,c))
-                                ):
-                                    # If we can't swap it with the first candidate,
-                                    # we check the next one.
-                                    continue
-                                else:
-                                    child.swap_courses(idx_candidate, (r,c))
+
+                    # if parent_course2swap != -1:
+                    idcs_child_candidates = child.course_positions[parent_course2swap]
+                    # If there are scheduled courses.
+                    candidates_outside_box = [candidate for candidate in idcs_child_candidates if candidate[0]<row_cut1 or
+                                                candidate[0]>row_cut2 or candidate[1]<col_cut1 or candidate[1]>col_cut2]
+
+                    if candidates_outside_box:
+                        for position, idx_candidate in enumerate(candidates_outside_box):
+                            if(
+                            child.check_single_conflict(idx_candidate, (r, c)) or
+                            child.check_single_conflict((r, c), idx_candidate) or
+                            child.check_single_availability((r,c), idx_candidate[1]) or
+                            child.check_single_availability(idx_candidate, c) or
+                            child.check_single_lecturer((r,c), idx_candidate) or
+                            child.check_single_lecturer(idx_candidate, (r,c))
+                            ):
+                                # If we can't swap it with the first candidate,
+                                # we check the next one.
+                                continue
+                            else:
+                                scores.append(child._delta_eval((r,c), idx_candidate))
+                                positions.append(position)
+                                # child.swap_courses(idx_candidate, (r,c))
+
+                        if scores:
+                            swap_counter += 1
+                            best_score = scores.index(min(scores))
+                            best_candidate_idx = positions[best_score]
+                            child.swap_courses(candidates_outside_box[best_candidate_idx], (r,c))
+
+            print 'Number of swaps: ', swap_counter
+            print 'out of number of elements: ', max((row_cut2 - row_cut1), 1)*max((col_cut2 - col_cut1), 1)
 
 
         return offspring
