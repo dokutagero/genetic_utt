@@ -21,6 +21,7 @@ class GeneticAlgorithmPureTT():
 
         self.best_individual = None
         self.print_population(self.population[0].schedule)
+        self.scores_per_iteration = []
 
 
     def genetic_simulation(self):
@@ -36,6 +37,7 @@ class GeneticAlgorithmPureTT():
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
             o1, o2 = self.recombination(self.population[p1], self.population[p2])
+            # o1, o2 = self.population[p1], self.population[p2]
             o1_prime, o2_prime = self.mutation((o1, o2))
             # Select 4 individuals and return worst of pairs
             w1, w2 = self.selection(best_selection=False)
@@ -43,6 +45,10 @@ class GeneticAlgorithmPureTT():
             self.population[w2] = o2_prime
 
             iteration += 1
+
+            score_list = [individual.score for individual in self.population]
+            best_individual = score_list.index(min(score_list))
+            self.scores_per_iteration.append(self.population[best_individual].score)
 
         score_list = [individual.score for individual in self.population]
         best_individual = score_list.index(min(score_list))
@@ -84,8 +90,8 @@ class GeneticAlgorithmPureTT():
         # row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
         # col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
 
-        vertical_max_size = Parent1.schedule.shape[0] // 2
-        horizontal_max_size = Parent1.schedule.shape[1] // 3
+        vertical_max_size = 3
+        horizontal_max_size = 3
 
         # row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
         # row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)
@@ -148,8 +154,8 @@ class GeneticAlgorithmPureTT():
                             best_candidate_idx = positions[best_score]
                             child.swap_courses(candidates_outside_box[best_candidate_idx], (r,c))
 
-            print 'Number of swaps: ', swap_counter
-            print 'out of number of elements: ', max((row_cut2 - row_cut1), 1)*max((col_cut2 - col_cut1), 1)
+            # print 'Number of swaps: ', swap_counter
+            # print 'out of number of elements: ', max((row_cut2 - row_cut1), 1)*max((col_cut2 - col_cut1), 1)
 
 
         return offspring
