@@ -57,20 +57,20 @@ if enable_profiler:
 data = load_data.load(sys.argv[1:])
 fitness_model = fftt(data)
 #
-mutation_prob = 0.02
+mutation_prob = 0.1
 pop_size = 20
 ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
                             fitness_model=fitness_model)
 ga.genetic_simulation()
-#
-#
-# if enable_profiler:
-#     pr.disable()
-#     s = StringIO.StringIO()
-#     sortby = 'cumulative'
-#     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-#     ps.print_stats()
-#     print s.getvalue()
+
+
+if enable_profiler:
+    pr.disable()
+    s = StringIO.StringIO()
+    sortby = 'cumulative'
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats()
+    print s.getvalue()
 
 
 # =====================================================

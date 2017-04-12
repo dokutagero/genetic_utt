@@ -8,6 +8,7 @@ from Timetable import Timetable
 import pdb
 import copy
 
+
 class GeneticAlgorithmPureTT():
 
     def __init__(self, data, population_size, mutation_prob, fitness_model):
@@ -35,12 +36,23 @@ class GeneticAlgorithmPureTT():
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
-            o1, o2 = self.recombination(self.population[p1], self.population[p2])
+            P1 = self.population[p1]
+            P2 = self.population[p2]
+            
+            P1.optimize_timeslots()
+            P2.optimize_timeslots()
+
+            o1, o2 = self.recombination(P1, P2)
             o1_prime, o2_prime = self.mutation((o1, o2))
+
+            # o1_prime.optimize_timeslots()
+            # o2_prime.optimize_timeslots()
+
             # Select 4 individuals and return worst of pairs
             w1, w2 = self.selection(best_selection=False)
             self.population[w1] = o1_prime
             self.population[w2] = o2_prime
+
 
             iteration += 1
 
