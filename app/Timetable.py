@@ -13,7 +13,6 @@ class Timetable(object):
         self.course_positions = dict((int(course[1:]),[]) for course in data["courses"].keys())
         self.course_taught_in = dict((int(course[1:]),dict((room, 0) for room in range(data["basics"]['rooms']))) for course in data["courses"].keys())
 
-
         idcs = [idcs for idcs, val in np.ndenumerate(self.schedule)]
         np.random.shuffle(idcs)
 
@@ -42,55 +41,21 @@ class Timetable(object):
                         self.insert_course(ind, course_id)
 
         self.calc_score_total()
+        self.optimize_timeslots(3)
 
     # hill climber
-    def optimize_timeslots(self):
-        # rooms = range(self.data['basics']['rooms'])
-        #
-        # for ts in range(self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]):
-        #     courses = [self.schedule[room,ts] for room in rooms]
-        #
-        #     capacity = [self.data['rooms'][room] for room in rooms]
-        #     capacity_zipped = zip(rooms, capacity)
-        #     capacity_zipped.sort(key = lambda x: x[1])
-        #
-        #     students_per_course = [self.data['students_per_course'][course] if course != -1 else 0 for course in courses]
-        #     students_zipped = zip(rooms, students_per_course)
-        #     students_zipped.sort(key = lambda x: x[1])
-        #
-        #     print rooms
-        #     print students_zipped
-        #     print capacity_zipped
-        #     print '-------'
-        #
-        #     order = [x[0] for x in capacity_zipped]
-        #     order_2 =[x[0] for x in students_zipped]
-        #     print self._capacity_delta_ts(ts, order)
-        #     delta = self._capacity_delta_ts(ts, order)
-        #     # print delta
-        #     delta += self._room_delta_ts(ts, order)
-        #
-        #     timeslot_copy = self.schedule[:,ts].copy()
-        #     for i in rooms:
-        #         old_room = students_zipped[i][0]
-        #         new_room = capacity_zipped[i][0]
-        #         # print old_room, new_room
-        #         course = timeslot_copy[old_room]
-        #
-        #         if course != -1:
-        #             self.course_positions[course].remove((old_room,ts))
-        #             self.course_positions[course].append((new_room,ts))
-        #             self.course_taught_in[course][old_room] -= 1
-        #             self.course_taught_in[course][new_room] += 1
-        #
-        #         self.schedule[new_room,ts] = course
-        #     self.score = self.score + delta
-
-
-
-        iterations = 10
+    def optimize_timeslots(self, iterations='default', timeslots='all'):
         rooms = range(self.data['basics']['rooms'])
-        for ts in range(self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]):
+
+        if iterations=='default':
+            iterations = random.randint(0,len(rooms))
+
+        if timeslots=='all':
+            timeslots = self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]
+        elif timeslots=='random':
+            timeslots = random.randint(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"])
+
+        for ts in range(timeslots):
             best_delta = 0
             different = False
             best = rooms
@@ -121,8 +86,6 @@ class Timetable(object):
 
                     self.schedule[best[i],ts] = course
                 self.score = self.score + best_delta
-
-
 
 
     def insert_course(self, position, course):
@@ -164,13 +127,17 @@ class Timetable(object):
             self.course_taught_in[course_2][pos_1[0]]+=1
 
 
-    def calc_score_total(self, save=True):
+    def calc_score_total(self, save=True, print_out=False):
         penalty = []
         penalty.append(self._unscheduled_penalty())
         penalty.append(self._capacity_penalty())
         penalty.append(self._min_days_penalty())
         penalty.append(self._compactness_penalty())
         penalty.append(self._room_penalty())
+
+        if print_out:
+            for p in penalty:
+                print p
 
         if save:
             self.score = sum(penalty)
@@ -206,17 +173,17 @@ class Timetable(object):
         value_after = 0
 
         for i in rooms:
-            course = self.schedule[i,ts]
+            if i != order[i]:
+                course = self.schedule[i,ts]
 
-            if course != -1:
-                taught_in = dict(self.course_taught_in[course])
+                if course != -1:
+                    taught_in = dict(self.course_taught_in[course])
+                    delta -= len([value for value in taught_in.values() if value != 0 ])
 
-                delta -= len([value for value in taught_in.values() if value != 0 ])
-
-                # simulate swaps
-                taught_in[i]-=1
-                taught_in[order[i]]+=1
-                delta += len([value for value in taught_in.values() if value != 0 ])
+                    # simulate swaps
+                    taught_in[i]-=1
+                    taught_in[order[i]]+=1
+                    delta += len([value for value in taught_in.values() if value != 0 ])
 
         return delta
 
@@ -248,7 +215,6 @@ class Timetable(object):
         course_1 = self.schedule[pos_1]
         course_2 = self.schedule[pos_2]
 
-
         missing_days_before = 0
         missing_days_after  = 0
         course_1_positions = []
@@ -269,9 +235,9 @@ class Timetable(object):
         course_1_positions.append(pos_2)
 
         if course_1 != -1:
-            missing_days_after += max(0, min_days_1 - len(set([pos[1] // periods_per_day for pos in course_1_positions])))
+            missing_days_after += max(0, min_days_1 - len(set([pos[1] // periods_per_day for pos in course_1_positions ])))
         if course_2 != -1:
-            missing_days_after += max(0, min_days_2 - len(set([pos[1] // periods_per_day for pos in course_2_positions])))
+            missing_days_after += max(0, min_days_2 - len(set([pos[1] // periods_per_day for pos in course_2_positions ])))
 
         return penalty * (missing_days_after - missing_days_before)
 
@@ -348,7 +314,7 @@ class Timetable(object):
                         already_penalized.append((pos[1] + 1, curriculum))
 
             # simulate swap
-            schedule_copy = np.array(self.schedule)
+            schedule_copy = self.schedule.copy()
             schedule_copy[pos_1] = course_2
             schedule_copy[pos_2] = course_1
 

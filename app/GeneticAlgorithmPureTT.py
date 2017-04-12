@@ -38,9 +38,9 @@ class GeneticAlgorithmPureTT():
             p1, p2 = self.selection()
             P1 = self.population[p1]
             P2 = self.population[p2]
-            
-            P1.optimize_timeslots()
-            P2.optimize_timeslots()
+
+            P1.optimize_timeslots(timeslots='random')
+            P2.optimize_timeslots(timeslots='random')
 
             o1, o2 = self.recombination(P1, P2)
             o1_prime, o2_prime = self.mutation((o1, o2))
@@ -53,17 +53,17 @@ class GeneticAlgorithmPureTT():
             self.population[w1] = o1_prime
             self.population[w2] = o2_prime
 
-
             iteration += 1
 
         score_list = [individual.score for individual in self.population]
         best_individual = score_list.index(min(score_list))
 
         self.best_individual = self.population[best_individual]
+        self.best_individual.optimize_timeslots(timeslots='all', iterations=100)
         self.print_population(self.best_individual.schedule)
 
         print "Best score: ", self.best_individual.score
-        print 'The score should be: ', self.best_individual.calc_score_total(save=False)
+        print 'Penalties: \n', self.best_individual.calc_score_total(save=False,print_out=True)
         print 'Iterations: ', iteration
 
 

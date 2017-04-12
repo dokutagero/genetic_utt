@@ -48,13 +48,13 @@ import re, pstats, StringIO
 # ================== Regular code ======================
 
 runtime = sys.argv[-1]
-enable_profiler = False
+enable_profiler = True
 
 if enable_profiler:
     pr = cProfile.Profile()
     pr.enable()
 
-data = load_data.load(sys.argv[1:])
+data = load_data.load(sys.argv[1:],index=1)
 fitness_model = fftt(data)
 #
 mutation_prob = 0.1
