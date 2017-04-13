@@ -51,7 +51,10 @@ class GeneticAlgorithmPureTT():
             #     self.population[p1].room_hill_climb()
             #     self.population[p2].room_hill_climb()
             if (len(np.where((self.population[p1].schedule - self.population[p2].schedule) == 0)[0]) / float(self.population[p1].schedule.size)) > 0.75:
-                o1 = copy.deepcopy(self.population[p1])
+                best_scores = [self.population[p1].score, self.population[p2].score]
+                parents = [p1,p2]
+
+                o1 = copy.deepcopy(self.population[parents[best_scores.index(max(best_scores))]])
                 o2 = Timetable(self.data)
                 random_offspring_counter += 1
                 # print  'added random offspring: ', random_offspring_counter

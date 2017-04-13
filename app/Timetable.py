@@ -12,10 +12,10 @@ class Timetable(object):
         self.schedule = np.zeros(shape=(data["basics"]["rooms"], data["basics"]["periods_per_day"] * data["basics"]["days"]), dtype=np.int8) - 1
         self.course_positions = dict((int(course[1:]),[]) for course in data["courses"].keys())
 
-        # self.compactness_p = 0
-        # self.room_p = 0
-        # self.capacity_p = 0
-        # self.min_wd_p = 0
+        self.compactness_p = 0
+        self.room_p = 0
+        self.capacity_p = 0
+        self.min_wd_p = 0
 
 
 
@@ -105,11 +105,11 @@ class Timetable(object):
         delta.append(self._min_days_delta(pos_1, pos_2, position))
         delta.append(self._room_delta(pos_1, pos_2, position))
 
-        # if swap:
-        #     self.capacity_p += self._capacity_delta(pos_1, pos_2, position)
-        #     self.compactness_p += self._compactness_delta(pos_1, pos_2, position)
-        #     self.min_wd_p += self._min_days_delta(pos_1, pos_2, position)
-        #     self.room_p += self._room_delta(pos_1, pos_2, position)
+        if swap:
+            self.capacity_p += self._capacity_delta(pos_1, pos_2, position)
+            self.compactness_p += self._compactness_delta(pos_1, pos_2, position)
+            self.min_wd_p += self._min_days_delta(pos_1, pos_2, position)
+            self.room_p += self._room_delta(pos_1, pos_2, position)
 
 
 
@@ -154,10 +154,10 @@ class Timetable(object):
 
         if save:
             self.score = sum(penalty)
-            # self.room_p = self._room_penalty()
-            # self.min_wd_p = self._min_days_penalty()
-            # self.capacity_p = self._capacity_penalty()
-            # self.compactness_p = self._compactness_penalty()
+            self.room_p = self._room_penalty()
+            self.min_wd_p = self._min_days_penalty()
+            self.capacity_p = self._capacity_penalty()
+            self.compactness_p = self._compactness_penalty()
 
         else:
             return sum(penalty)
