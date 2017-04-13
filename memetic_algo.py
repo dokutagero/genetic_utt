@@ -1,5 +1,6 @@
 import sys
 from app.GeneticAlgorithmPureTT import GeneticAlgorithmPureTT
+from app.GeneticAlgorithmNonPure import GeneticAlgorithmNonPure
 import utils.load_data as load_data
 from app.FitnessFunctionTT import FitnessFunctionTT as fftt
 import csv
@@ -48,21 +49,24 @@ import re, pstats, StringIO
 # ================== Regular code ======================
 
 runtime = sys.argv[-1]
-enable_profiler = True
+enable_profiler = False
 
 if enable_profiler:
     pr = cProfile.Profile()
     pr.enable()
 
 data = load_data.load(sys.argv[1:],index=1)
-fitness_model = fftt(data)
-#
+
 mutation_prob = 0.1
 pop_size = 20
-ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
-                            fitness_model=fitness_model)
+# ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob)
+print '\n\nNON PURE:'
+ga = GeneticAlgorithmNonPure(data, pop_size, mutation_prob)
 ga.genetic_simulation()
 
+print "\n\nPURE"
+ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob)
+ga.genetic_simulation()
 
 if enable_profiler:
     pr.disable()

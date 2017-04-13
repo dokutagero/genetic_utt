@@ -21,6 +21,7 @@ def load(params, index=1):
 	lecturer_lectures(data)
 	course_curriculum(data)
 	min_days_per_course(data)
+	num_lectures_per_course(data)
 	return data
 
 def students_per_course(data):
@@ -34,6 +35,12 @@ def min_days_per_course(data):
 	courses = data['courses']
 	for course in data["courses"].keys():
 		data["min_days_per_course"][int(course[1:])] = courses[course]['minimum_working_days']
+
+def num_lectures_per_course(data):
+	data['number_of_lectures'] = {}
+	courses = data['courses']
+	for course in data["courses"].keys():
+		data["number_of_lectures"][int(course[1:])] = courses[course]['number_of_lectures']
 
 def text_to_int_courses(data):
 	data["course_int"] = {}

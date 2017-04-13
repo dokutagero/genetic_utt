@@ -40,22 +40,31 @@ class Timetable(object):
                         scheduled = True
                         self.insert_course(ind, course_id)
 
+        # self._find_empty_slots()
         self.calc_score_total()
         self.optimize_timeslots(3)
 
     # hill climber
-    def optimize_timeslots(self, iterations='default', timeslots='all'):
+    def optimize_timeslots(self, iterations='random', timeslots='all'):
         rooms = range(self.data['basics']['rooms'])
 
-        if iterations=='default':
+        if iterations=='random':
             iterations = random.randint(0,len(rooms))
+        elif iterations=='all':
+            iterations = len(rooms)^len(rooms)
+        else:
+            iterations = random.randint(0,int( len(rooms) *iterations ))
 
         if timeslots=='all':
-            timeslots = self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]
+            timeslots = range(self.data["basics"]["periods_per_day"] * self.data["basics"]["days"])
         elif timeslots=='random':
-            timeslots = random.randint(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"])
+            timeslots = range(random.randint(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"] ))
+        elif timeslots=='up-to-half':
+            timeslots = random.sample(range(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]), random.randint(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]) )
+        else:
+            timeslots = random.sample(range(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]), timeslots)
 
-        for ts in range(timeslots):
+        for ts in timeslots:
             best_delta = 0
             different = False
             best = rooms
@@ -87,6 +96,35 @@ class Timetable(object):
                     self.schedule[best[i],ts] = course
                 self.score = self.score + best_delta
 
+
+    # def insert_unscheduled(self):
+    #     empty_slots = self.course_positions[-1]
+    #
+    #     print self.unscheduled
+    #
+    #     for course in self.unscheduled:
+    #         for pos in empty_slots:
+    #             if (
+    #                 self.check_single_conflict_old_interface(course, pos) or
+    #                 self.check_single_availability_old_interface(course, pos) or
+    #                 self.check_single_lecturer_old_interface(course, pos)
+    #             ):
+    #                 continue
+    #             else:
+    #                 self.insert_course(pos, course)
+    #
+    #     # TODO DOESN'T SEEM TO BE DOING ANYTHING...
+    #     print self.unscheduled
+
+
+    def _find_empty_slots(self):
+        tmp = []
+        for room in range(self.schedule.shape[0]):
+            for ts in range(self.schedule.shape[1]):
+                if self.schedule[room, ts] == -1:
+                    tmp.append((room,ts))
+
+        self.course_positions[-1] = tmp
 
     def insert_course(self, position, course):
         self.schedule[position] = course

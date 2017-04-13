@@ -2,7 +2,6 @@
 import numpy as np
 import time
 from collections import Counter
-import FitnessFunctionTT as fftt
 import random
 from Timetable import Timetable
 import pdb
@@ -11,11 +10,10 @@ import copy
 
 class GeneticAlgorithmPureTT():
 
-    def __init__(self, data, population_size, mutation_prob, fitness_model):
+    def __init__(self, data, population_size, mutation_prob):
         self.population_size = population_size
         self.mutation_prob = mutation_prob
         self.data = data
-        self.fitness_model = fitness_model
 
         self.population = []
         self.initialize_population()
@@ -39,8 +37,11 @@ class GeneticAlgorithmPureTT():
             P1 = self.population[p1]
             P2 = self.population[p2]
 
-            P1.optimize_timeslots(timeslots='random')
-            P2.optimize_timeslots(timeslots='random')
+            # P1.optimize_timeslots(timeslots='up-to-half', iterations=0.5)
+            # P2.optimize_timeslots(timeslots='up-to-half', iterations=0.5)
+
+            P1.optimize_timeslots(timeslots=2, iterations=0.25)
+            P2.optimize_timeslots(timeslots=2, iterations=0.25)
 
             o1, o2 = self.recombination(P1, P2)
             o1_prime, o2_prime = self.mutation((o1, o2))
@@ -59,7 +60,8 @@ class GeneticAlgorithmPureTT():
         best_individual = score_list.index(min(score_list))
 
         self.best_individual = self.population[best_individual]
-        self.best_individual.optimize_timeslots(timeslots='all', iterations=100)
+        # self.best_individual.insert_unscheduled()
+        self.best_individual.optimize_timeslots(timeslots='all', iterations='all')
         self.print_population(self.best_individual.schedule)
 
         print "Best score: ", self.best_individual.score
@@ -74,7 +76,7 @@ class GeneticAlgorithmPureTT():
 
 
     def evaluation(self, Individual):
-        return self.fitness_model.evaluate(Individual)
+        pass
 
 
     def selection(self, best_selection=True):
