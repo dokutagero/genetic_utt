@@ -37,6 +37,8 @@ class GeneticAlgorithmPureTT():
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
+            self.population[p1].fill_unscheduled()
+            self.population[p2].fill_unscheduled()
             # if iteration%300==0:
             #     self.population[p1].room_hill_climb()
             #     self.population[p2].room_hill_climb()
@@ -100,8 +102,8 @@ class GeneticAlgorithmPureTT():
         # row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
         # col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
 
-        vertical_max_size = 5
-        horizontal_max_size = 4
+        vertical_max_size = 3
+        horizontal_max_size = 3
 
         # row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
         # row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)
