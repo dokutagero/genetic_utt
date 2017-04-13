@@ -12,6 +12,13 @@ class Timetable(object):
         self.schedule = np.zeros(shape=(data["basics"]["rooms"], data["basics"]["periods_per_day"] * data["basics"]["days"]), dtype=np.int8) - 1
         self.course_positions = dict((int(course[1:]),[]) for course in data["courses"].keys())
 
+        # self.compactness_p = 0
+        # self.room_p = 0
+        # self.capacity_p = 0
+        # self.min_wd_p = 0
+
+
+
         idcs = [idcs for idcs, val in np.ndenumerate(self.schedule)]
         np.random.shuffle(idcs)
 
@@ -58,7 +65,12 @@ class Timetable(object):
                 ):
                     continue
                 else:
-                    pass
+                    self.swap_courses(unscheduled_course, (room,ts), position=False)
+                    self.score -= 10
+                    # print unscheduled_course
+                    # print self.unscheduled
+                    self.unscheduled.remove(unscheduled_course)
+                    break
 
 
 
@@ -66,13 +78,17 @@ class Timetable(object):
 
         num_rooms = self.schedule.shape[0]
         for col in range(self.schedule.shape[1]):
-            for random_room in random.sample(range(0,num_rooms), 2):
-                room_to_swap = random.randint(0,num_rooms-1)
-                while(random_room == room_to_swap):
-                    room_to_swap = random.randint(0,num_rooms-1)
+            # for random_room in random.sample(range(0,num_rooms), 2):
+            for random_room in range(0,num_rooms):
 
-                if self._capacity_delta((random_room,col), (room_to_swap,col)) < 0:
-                    self.swap_courses((random_room,col), (room_to_swap,col))
+                for random_try in range(0,10):
+                    room_to_swap = random.randint(0,num_rooms-1)
+                    while(random_room == room_to_swap):
+                        room_to_swap = random.randint(0,num_rooms-1)
+
+                    if (self._capacity_delta((random_room,col), (room_to_swap,col))+self._room_delta((random_room,col), (room_to_swap,col))) < 0:
+                        self.swap_courses((random_room,col), (room_to_swap,col))
+                        break
 
 
 
@@ -82,35 +98,49 @@ class Timetable(object):
         self.course_positions[course].append(position)
 
 
-    def _delta_eval(self, pos_1, pos_2):
+    def _delta_eval(self, pos_1, pos_2, position=True, swap=False):
         delta = []
-        delta.append(self._capacity_delta(pos_1, pos_2))
-        delta.append(self._compactness_delta(pos_1, pos_2))
-        delta.append(self._min_days_delta(pos_1, pos_2))
-        delta.append(self._room_delta(pos_1, pos_2))
+        delta.append(self._capacity_delta(pos_1, pos_2, position))
+        delta.append(self._compactness_delta(pos_1, pos_2, position))
+        delta.append(self._min_days_delta(pos_1, pos_2, position))
+        delta.append(self._room_delta(pos_1, pos_2, position))
+
+        # if swap:
+        #     self.capacity_p += self._capacity_delta(pos_1, pos_2, position)
+        #     self.compactness_p += self._compactness_delta(pos_1, pos_2, position)
+        #     self.min_wd_p += self._min_days_delta(pos_1, pos_2, position)
+        #     self.room_p += self._room_delta(pos_1, pos_2, position)
+
+
 
         return sum(delta)
 
 
-    def swap_courses(self, pos_1, pos_2):
+    def swap_courses(self, pos_1, pos_2, position=True):
 
-        total_delta = self._delta_eval(pos_1, pos_2)
+        total_delta = self._delta_eval(pos_1, pos_2, position, swap=True)
         # if total_delta < 0:
         self.score = self.score + total_delta
 
-        course_1 = self.schedule[pos_1]
+        if position:
+            course_1 = self.schedule[pos_1]
+        else:
+            course_1 = pos_1
         course_2 = self.schedule[pos_2]
 
-        self.schedule[pos_1] = course_2
+        if position:
+            self.schedule[pos_1] = course_2
         self.schedule[pos_2] = course_1
 
         # if course_1 != -1:
-        self.course_positions[course_1].remove(pos_1)
+        if position:
+            self.course_positions[course_1].remove(pos_1)
         self.course_positions[course_1].append(pos_2)
 
         # if course_2 != -1:
         self.course_positions[course_2].remove(pos_2)
-        self.course_positions[course_2].append(pos_1)
+        if position:
+            self.course_positions[course_2].append(pos_1)
 
 
 
@@ -124,35 +154,55 @@ class Timetable(object):
 
         if save:
             self.score = sum(penalty)
+            # self.room_p = self._room_penalty()
+            # self.min_wd_p = self._min_days_penalty()
+            # self.capacity_p = self._capacity_penalty()
+            # self.compactness_p = self._compactness_penalty()
+
         else:
             return sum(penalty)
 
 
-    def _capacity_delta(self, pos_1, pos_2):
-        capacity_1 = self.data['rooms'][pos_1[0]]
-        capacity_2 = self.data['rooms'][pos_2[0]]
 
-        if self.schedule[pos_1] != -1:
-            students_per_course_1 = self.data['students_per_course'][self.schedule[pos_1]]
+
+
+    def _capacity_delta(self, pos_1, pos_2, position=True):
+
+        if position:
+            capacity_1 = self.data['rooms'][pos_1[0]]
+            capacity_2 = self.data['rooms'][pos_2[0]]
+
+            if self.schedule[pos_1] != -1:
+                students_per_course_1 = self.data['students_per_course'][self.schedule[pos_1]]
+            else:
+                students_per_course_1 = 0
+
+            if self.schedule[pos_2] != -1:
+                students_per_course_2 = self.data['students_per_course'][self.schedule[pos_2]]
+            else:
+                students_per_course_2 = 0
+
+            before = max(0, students_per_course_1 - capacity_1) + max(0, students_per_course_2 - capacity_2)
+            after  = max(0, students_per_course_2 - capacity_1) + max(0, students_per_course_1 - capacity_2)
+
+            return after - before
         else:
-            students_per_course_1 = 0
-
-        if self.schedule[pos_2] != -1:
-            students_per_course_2 = self.data['students_per_course'][self.schedule[pos_2]]
-        else:
-            students_per_course_2 = 0
-
-        before = max(0, students_per_course_1 - capacity_1) + max(0, students_per_course_2 - capacity_2)
-        after  = max(0, students_per_course_2 - capacity_1) + max(0, students_per_course_1 - capacity_2)
-
-        return after - before
+            # If we take an unscheduled course, the capacity delta can't improve.
+            # It can only output 0 or penalty from excess of students.
+            students_per_course_1 = self.data['students_per_course'][pos_1]
+            capacity_2 = self.data['rooms'][pos_2[0]]
+            return max(0, students_per_course_1 - capacity_2)
 
 
-    def _min_days_delta(self, pos_1, pos_2):
+    def _min_days_delta(self, pos_1, pos_2, position=True):
         penalty = 5
         periods_per_day = self.data['basics']['periods_per_day']
 
-        course_1 = self.schedule[pos_1]
+        if position:
+            course_1 = self.schedule[pos_1]
+        else:
+            course_1 = pos_1
+
         course_2 = self.schedule[pos_2]
 
 
@@ -164,7 +214,8 @@ class Timetable(object):
             min_days_1 = self.data['min_days_per_course'][course_1]
             missing_days_before += max(0, min_days_1 - len(set([pos[1] // periods_per_day for pos in self.course_positions[course_1]])))
             course_1_positions = list(self.course_positions[course_1])
-            course_1_positions.remove(pos_1)
+            if position:
+                course_1_positions.remove(pos_1)
 
         if course_2 != -1:
             min_days_2 = self.data['min_days_per_course'][course_2]
@@ -172,7 +223,8 @@ class Timetable(object):
             course_2_positions = list(self.course_positions[course_2])
             course_2_positions.remove(pos_2)
 
-        course_2_positions.append(pos_1)
+        if position:
+            course_2_positions.append(pos_1)
         course_1_positions.append(pos_2)
 
         if course_1 != -1:
@@ -184,131 +236,181 @@ class Timetable(object):
 
 
 
-    def _compactness_delta(self, pos_1, pos_2):
+    def _compactness_delta(self, pos_1, pos_2, position=True):
         penalty = 2
         periods_per_day = self.data['basics']['periods_per_day']
         timeslots =  periods_per_day * self.data["basics"]["days"]
 
-        course_1 = self.schedule[pos_1]
-        course_2 = self.schedule[pos_2]
+        if position:
+            course_1 = self.schedule[pos_1]
+            course_2 = self.schedule[pos_2]
 
-        curricula_1 = set()
-        curricula_2 = set()
+            curricula_1 = set()
+            curricula_2 = set()
 
-        if course_1 != -1:
-            curricula_1 = set(self.data["course_curricula"][course_1])
-        if course_2 != -1:
-            curricula_2 = set(self.data["course_curricula"][course_2])
-        courses_courricula = curricula_1.union(curricula_2)
-
-        already_penalized = []
-
-        value_before = 0
-        value_after = 0
-
-        '''
-            _bb - before before
-            _b  - before
-            _c  - current
-            _a  - after
-            _aa - after after
-        '''
-
-        if course_1 != course_2:
-            positions = [pos_1, pos_2]
-
-            for pos in positions:
-                day_bb = (pos[1] - 2) // periods_per_day
-                day_b  = (pos[1] - 1) // periods_per_day
-                day    =  pos[1] // periods_per_day
-                day_a  = (pos[1] + 1) // periods_per_day
-                day_aa = (pos[1] + 2) // periods_per_day
-
-                curricula_bb = []
-                curricula_b  = []
-                curricula_a  = []
-                curricula_aa = []
-
-                if day_b == day:
-                    curricula_b = [curr for course in self.schedule[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
-                if day_bb == day:
-                    curricula_bb = [curr for course in self.schedule[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
-
-                if day_a == day:
-                    curricula_a = [curr for course in self.schedule[:,pos[1]+1] if course != -1 for curr in self.data["course_curricula"][course]]
-                if day_aa == day:
-                    curricula_aa = [curr for course in self.schedule[:,pos[1]+2] if course != -1 for curr in self.data["course_curricula"][course]]
-
-                curricula_c = [curr for course in self.schedule[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
-
-                for curriculum in courses_courricula:
-                    if (pos[1] - 1, curriculum) not in already_penalized and curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
-                        value_before += 1
-                        already_penalized.append((pos[1] - 1, curriculum))
-
-                    if (pos[1] , curriculum) not in already_penalized and curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
-                        value_before += 1
-                        already_penalized.append((pos[1] , curriculum))
-
-                    if (pos[1] + 1, curriculum) not in already_penalized and curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
-                        value_before += 1
-                        already_penalized.append((pos[1] + 1, curriculum))
-
-            # simulate swap
-            schedule_copy = np.array(self.schedule)
-            schedule_copy[pos_1] = course_2
-            schedule_copy[pos_2] = course_1
+            if course_1 != -1:
+                curricula_1 = set(self.data["course_curricula"][course_1])
+            if course_2 != -1:
+                curricula_2 = set(self.data["course_curricula"][course_2])
+            courses_courricula = curricula_1.union(curricula_2)
 
             already_penalized = []
 
-            for pos in positions:
+            value_before = 0
+            value_after = 0
 
-                day_bb = (pos[1] - 2) // periods_per_day
-                day_b  = (pos[1] - 1) // periods_per_day
-                day    =  pos[1] // periods_per_day
-                day_a  = (pos[1] + 1) // periods_per_day
-                day_aa = (pos[1] + 2) // periods_per_day
+            '''
+                _bb - before before
+                _b  - before
+                _c  - current
+                _a  - after
+                _aa - after after
+            '''
 
-                curricula_bb = []
-                curricula_b  = []
-                curricula_a  = []
-                curricula_aa = []
+            if course_1 != course_2:
+                positions = [pos_1, pos_2]
 
-                if day_b == day:
-                    curricula_b = [curr for course in schedule_copy[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
-                if day_bb == day:
-                    curricula_bb = [curr for course in schedule_copy[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
+                for pos in positions:
+                    day_bb = (pos[1] - 2) // periods_per_day
+                    day_b  = (pos[1] - 1) // periods_per_day
+                    day    =  pos[1] // periods_per_day
+                    day_a  = (pos[1] + 1) // periods_per_day
+                    day_aa = (pos[1] + 2) // periods_per_day
 
-                if day_a == day:
-                    curricula_a = [curr for course in schedule_copy[:,pos[1]+1] if course != -1 for curr in self.data["course_curricula"][course]]
-                if day_aa == day:
-                    curricula_aa = [curr for course in schedule_copy[:,pos[1]+2] if course != -1 for curr in self.data["course_curricula"][course]]
+                    curricula_bb = []
+                    curricula_b  = []
+                    curricula_a  = []
+                    curricula_aa = []
 
-                curricula_c = [curr for course in schedule_copy[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
+                    if day_b == day:
+                        curricula_b = [curr for course in self.schedule[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
+                    if day_bb == day:
+                        curricula_bb = [curr for course in self.schedule[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
 
-                for curriculum in courses_courricula:
-                    if (pos[1] - 1, curriculum) not in already_penalized and curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
-                        value_after += 1
-                        already_penalized.append((pos[1] - 1, curriculum))
+                    if day_a == day:
+                        curricula_a = [curr for course in self.schedule[:,pos[1]+1] if course != -1 for curr in self.data["course_curricula"][course]]
+                    if day_aa == day:
+                        curricula_aa = [curr for course in self.schedule[:,pos[1]+2] if course != -1 for curr in self.data["course_curricula"][course]]
 
-                    if (pos[1] , curriculum) not in already_penalized and curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
-                        value_after += 1
-                        already_penalized.append((pos[1] , curriculum))
+                    curricula_c = [curr for course in self.schedule[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
 
-                    if (pos[1] + 1, curriculum) not in already_penalized and curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
-                        value_after += 1
-                        already_penalized.append((pos[1] + 1, curriculum))
+                    for curriculum in courses_courricula:
+                        if (pos[1] - 1, curriculum) not in already_penalized and curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
+                            value_before += 1
+                            already_penalized.append((pos[1] - 1, curriculum))
+
+                        if (pos[1] , curriculum) not in already_penalized and curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
+                            value_before += 1
+                            already_penalized.append((pos[1] , curriculum))
+
+                        if (pos[1] + 1, curriculum) not in already_penalized and curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
+                            value_before += 1
+                            already_penalized.append((pos[1] + 1, curriculum))
+
+                # simulate swap
+                schedule_copy = np.array(self.schedule)
+                schedule_copy[pos_1] = course_2
+                schedule_copy[pos_2] = course_1
+
+                already_penalized = []
+
+                for pos in positions:
+
+                    day_bb = (pos[1] - 2) // periods_per_day
+                    day_b  = (pos[1] - 1) // periods_per_day
+                    day    =  pos[1] // periods_per_day
+                    day_a  = (pos[1] + 1) // periods_per_day
+                    day_aa = (pos[1] + 2) // periods_per_day
+
+                    curricula_bb = []
+                    curricula_b  = []
+                    curricula_a  = []
+                    curricula_aa = []
+
+                    if day_b == day:
+                        curricula_b = [curr for course in schedule_copy[:,pos[1]-1] if course != -1 for curr in self.data["course_curricula"][course]]
+                    if day_bb == day:
+                        curricula_bb = [curr for course in schedule_copy[:,pos[1]-2] if course != -1 for curr in self.data["course_curricula"][course]]
+
+                    if day_a == day:
+                        curricula_a = [curr for course in schedule_copy[:,pos[1]+1] if course != -1 for curr in self.data["course_curricula"][course]]
+                    if day_aa == day:
+                        curricula_aa = [curr for course in schedule_copy[:,pos[1]+2] if course != -1 for curr in self.data["course_curricula"][course]]
+
+                    curricula_c = [curr for course in schedule_copy[:,pos[1]] if course != -1 for curr in self.data["course_curricula"][course]]
+
+                    for curriculum in courses_courricula:
+                        if (pos[1] - 1, curriculum) not in already_penalized and curriculum in curricula_b and curriculum not in curricula_c and curriculum not in curricula_bb:
+                            value_after += 1
+                            already_penalized.append((pos[1] - 1, curriculum))
+
+                        if (pos[1] , curriculum) not in already_penalized and curriculum in curricula_c and curriculum not in curricula_b and curriculum not in curricula_a:
+                            value_after += 1
+                            already_penalized.append((pos[1] , curriculum))
+
+                        if (pos[1] + 1, curriculum) not in already_penalized and curriculum in curricula_a and curriculum not in curricula_c and curriculum not in curricula_aa:
+                            value_after += 1
+                            already_penalized.append((pos[1] + 1, curriculum))
 
 
-        return penalty * ( value_after - value_before)
+            return penalty * ( value_after - value_before)
+
+        # If we are swapping an unscheduled course
+        else:
+
+            unscheduled_curricula = [q for q in self.data['course_curricula'][pos_1]]
+            value_after = 0
+            day_bb = (pos_2[1] - 2) // periods_per_day
+            day_b  = (pos_2[1] - 1) // periods_per_day
+            day    =  pos_2[1] // periods_per_day
+            day_a  = (pos_2[1] + 1) // periods_per_day
+            day_aa = (pos_2[1] + 2) // periods_per_day
+
+
+            if day_b == day:
+                q_before = [qc for c in self.schedule[:, pos_2[1]-1] if c!=-1 for qc in self.data['course_curricula'][c]]
+                for q in unscheduled_curricula:
+                    if q in q_before:
+                        if day_bb == day:
+                            q_before2 = [qc for c in self.schedule[:, pos_2[1]-2] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_before2:
+                                # In this case we fixed compactness in timeslots before
+                                value_after -= 1
+                        else:
+                            value_after -= 1
+
+
+            if day_a == day:
+                q_after = [qc for c in self.schedule[:, pos_2[1]+1] if c!=-1 for qc in self.data['course_curricula'][c]]
+                for q in unscheduled_curricula:
+                    if q in q_after:
+                        if day_aa == day:
+                            q_after2 = [qc for c in self.schedule[:, pos_2[1]+2] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_after2:
+                                # In this case we fixed compactness in timeslots before
+                                value_after -= 1
+                        else:
+                            value_after -= 1
+
+
+            return penalty * value_after
+
+
+
+
+
 
 
     def belong_same_day(self,ts_1, ts_2):
         return ts_1//self.data['basics']['periods_per_day'] == ts_2//self.data['basics']['periods_per_day']
 
 
-    def _room_delta(self, pos_1, pos_2):
-        course_1 = self.schedule[pos_1]
+    def _room_delta(self, pos_1, pos_2, position=True):
+
+        if position:
+            course_1 = self.schedule[pos_1]
+        else:
+            course_1 = pos_1
         course_2 = self.schedule[pos_2]
 
         num_rooms_before = 0
@@ -318,14 +420,16 @@ class Timetable(object):
         if course_1 != -1:
             num_rooms_before += len(set([pos[0] for pos in self.course_positions[course_1]])) - 1
             course_1_positions = list(self.course_positions[course_1])
-            course_1_positions.remove(pos_1)
+            if position:
+                course_1_positions.remove(pos_1)
 
         if course_2 != -1:
             num_rooms_before += len(set([pos[0] for pos in self.course_positions[course_2]])) - 1
             course_2_positions = list(self.course_positions[course_2])
             course_2_positions.remove(pos_2)
 
-        course_2_positions.append(pos_1)
+        if position:
+            course_2_positions.append(pos_1)
         course_1_positions.append(pos_2)
 
         num_rooms_after = 0

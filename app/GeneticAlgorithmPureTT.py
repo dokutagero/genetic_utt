@@ -34,11 +34,19 @@ class GeneticAlgorithmPureTT():
         self.best_individual = self.population[best_individual]
         print "Best score after initialization: ", self.best_individual.score
 
+        number_hc = 1
+
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
             self.population[p1].fill_unscheduled()
             self.population[p2].fill_unscheduled()
+            if (time.time() - init_time) / float(self.data["run_time"]) > 0.75 and iteration%100==0:
+                self.population[p1].room_hill_climb()
+                self.population[p2].room_hill_climb()
+                # number_hc -= 1
+
+
             # if iteration%300==0:
             #     self.population[p1].room_hill_climb()
             #     self.population[p2].room_hill_climb()
@@ -73,6 +81,7 @@ class GeneticAlgorithmPureTT():
         print 'Iterations: ', iteration
 
 
+
     def initialize_population(self):
         for i in xrange(self.population_size):
             Individual = Timetable(self.data)
@@ -83,13 +92,20 @@ class GeneticAlgorithmPureTT():
         return self.fitness_model.evaluate(Individual)
 
 
-    def selection(self, best_selection=True):
+    def selection(self, best_selection=True, destruction=False):
         individual_indices = np.random.choice(range(len(self.population)), size=4, replace=False)
         # pdb.set_trace()
         fitness_values = [self.population[ind].score for ind in individual_indices]
         # fitness_values = [self.evaluation(self.population[individual]) for individual in individual_indices]
 
         if best_selection:
+            worst1 = individual_indices[fitness_values.index(max(fitness_values[0], fitness_values[1]))]
+            worst2 = individual_indices[fitness_values.index(max(fitness_values[2], fitness_values[3]))]
+
+            if destruction and (len(np.where((self.population[worst1].schedule - self.population[worst2].schedule) == 0)[0]) / float(self.population[worst1].schedule.size)) > 0.75:
+                self.population[worst1] = Timetable(self.data)
+                self.population[worst2] = Timetable(self.data)
+
             return (individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
                     individual_indices[fitness_values.index(min(fitness_values[2], fitness_values[3]))])
         else:

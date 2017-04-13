@@ -1,7 +1,7 @@
 import csv
 directory = "UniversityTimetablingCompetition"
 
-def load(params, index=1):
+def load(params, index=5):
 	index = '%02d' % index
 	global path
 	path = directory + '/Test' + index + '/'
