@@ -27,6 +27,7 @@ class GeneticAlgorithmPureTT():
     def genetic_simulation(self):
         init_time = time.time()
         iteration = 0
+        random_offspring_counter = 0
 
         score_list = [individual.score for individual in self.population]
         best_individual = score_list.index(min(score_list))
@@ -36,10 +37,16 @@ class GeneticAlgorithmPureTT():
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection()
-            if iteration%100==0:
-                self.population[p1].room_hill_climb()
-                self.population[p2].room_hill_climb()
-            o1, o2 = self.recombination(self.population[p1], self.population[p2])
+            # if iteration%300==0:
+            #     self.population[p1].room_hill_climb()
+            #     self.population[p2].room_hill_climb()
+            if (len(np.where((self.population[p1].schedule - self.population[p2].schedule) == 0)[0]) / float(self.population[p1].schedule.size)) > 0.75:
+                o1 = copy.deepcopy(self.population[p1])
+                o2 = Timetable(self.data)
+                random_offspring_counter += 1
+                # print  'added random offspring: ', random_offspring_counter
+            else:
+                o1, o2 = self.recombination(self.population[p1], self.population[p2])
             # o1, o2 = self.population[p1], self.population[p2]
             o1_prime, o2_prime = self.mutation((o1, o2))
             # Select 4 individuals and return worst of pairs
@@ -93,8 +100,8 @@ class GeneticAlgorithmPureTT():
         # row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
         # col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
 
-        vertical_max_size = 3
-        horizontal_max_size = 3
+        vertical_max_size = 5
+        horizontal_max_size = 4
 
         # row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
         # row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)
@@ -123,6 +130,10 @@ class GeneticAlgorithmPureTT():
                 for c in range(col_cut1, col_cut2 + 1):
                     parent_course2swap = parent.schedule[r,c]
                     child_course2swap = child.schedule[r,c]
+
+                    if parent_course2swap == child_course2swap:
+                        continue
+
                     scores = []
                     positions = []
 

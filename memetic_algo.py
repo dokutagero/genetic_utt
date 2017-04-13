@@ -9,6 +9,7 @@ import sys
 
 import cProfile
 import re, pstats, StringIO
+import matplotlib.pyplot as plt
 
 
 # def main():
@@ -57,11 +58,14 @@ if enable_profiler:
 data = load_data.load(sys.argv[1:])
 fitness_model = fftt(data)
 #
-mutation_prob = 0.2
+mutation_prob = 0.05
 pop_size = 10
 ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
                             fitness_model=fitness_model)
 ga.genetic_simulation()
+
+plt.plot(ga.scores_per_iteration)
+plt.show()
 #
 #
 # if enable_profiler:
