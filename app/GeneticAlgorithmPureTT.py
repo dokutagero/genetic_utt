@@ -36,20 +36,30 @@ class GeneticAlgorithmPureTT():
         print "Best score after initialization: ", self.best_individual.score
 
 #        number_hc = 1
-
+        llenya_counter = 1
+        llenya_gorda_counter = 1
+        
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection(destruction=True)
             self.population[p1].fill_unscheduled()
             self.population[p2].fill_unscheduled()
-#            if (time.time() - init_time) / float(self.data["run_time"]) > 0.75 and iteration%200==0:
-#                self.population[p1].room_hill_climb()
-#                self.population[p2].room_hill_climb()
-                # number_hc -= 1
-
-            # if iteration%300==0:
-            #     self.population[p1].room_hill_climb()
-            #     self.population[p2].room_hill_climb()
+#            if (time.time() - init_time) / float(self.data["run_time"]): > 0.75 and iteration%200==0:
+#            if (time.time() - init_time) / float(self.data["run_time"]) < 0.90:
+            self.population[p1].room_hill_climb()
+            self.population[p2].room_hill_climb()
+#            elif (time.time() - init_time) / float(self.data["run_time"]) > 0.97 and llenya_gorda_counter>0:
+#                    print 'llenya gorda'
+#                    self.population[p1].room_hill_climb(room2swap=self.population[p1].schedule.shape[0], rndtry=10)
+#                    self.population[p2].room_hill_climb(room2swap=self.population[p2].schedule.shape[0], rndtry=10)
+#                    llenya_gorda_counter -= 1
+            if (time.time() - init_time) / float(self.data["run_time"]) > 0.90 and iteration%50==0:
+                    print 'llenyaeta'
+                    self.population[p1].room_hill_climb(room2swap=self.population[p1].schedule.shape[0], rndtry=3)
+                    self.population[p2].room_hill_climb(room2swap=self.population[p2].schedule.shape[0], rndtry=3)
+                    llenya_counter -= 1
+#                    
+                
             if (len(np.where((self.population[p1].schedule - self.population[p2].schedule) == 0)[0]) / float(self.population[p1].schedule.size)) > 0.75:
                 best_scores = [self.population[p1].score, self.population[p2].score]
                 parents = [p1,p2]
@@ -77,6 +87,9 @@ class GeneticAlgorithmPureTT():
         best_individual = score_list.index(min(score_list))
 
         self.best_individual = self.population[best_individual]
+        print self.best_individual.score
+        self.best_individual.room_hill_climb(room2swap=self.population[p2].schedule.shape[0], rndtry=10)
+        print self.best_individual.score
         self.print_population(self.best_individual.schedule)
 
         print "Best score: ", self.best_individual.score

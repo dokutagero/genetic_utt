@@ -79,18 +79,18 @@ class Timetable(object):
 
 
 
-    def room_hill_climb(self):
+    def room_hill_climb(self, room2swap=1, rndtry=1):
 
         num_rooms = self.schedule.shape[0]
         for col in range(self.schedule.shape[1]):
-            # for random_room in random.sample(range(0,num_rooms), 2):
-            for random_room in range(0,num_rooms):
+            for random_room in random.sample(range(0,num_rooms), room2swap):
+#            for random_room in range(0,num_rooms):
 
-                for random_try in range(0,10):
+                for random_try in range(0,rndtry):
                     room_to_swap = random.randint(0,num_rooms-1)
                     while(random_room == room_to_swap):
                         room_to_swap = random.randint(0,num_rooms-1)
-
+    
                     if (self._capacity_delta((random_room,col), (room_to_swap,col))+self._room_delta((random_room,col), (room_to_swap,col))) < 0:
                         self.swap_courses((random_room,col), (room_to_swap,col))
                         break
