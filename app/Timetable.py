@@ -13,6 +13,9 @@ class Timetable(object):
         self.schedule = np.zeros(shape=(data["basics"]["rooms"], data["basics"]["periods_per_day"] * data["basics"]["days"]), dtype=np.int8) - 1
         self.course_positions = dict((int(course[1:]),[]) for course in data["courses"].keys())
 
+        self.course_taught_in = dict((int(course[1:]),dict((room, 0) for room in range(data["basics"]['rooms']))) for course in data["courses"].keys())
+
+
         self.compactness_p = 0
         self.room_p = 0
         self.capacity_p = 0
@@ -105,8 +108,8 @@ class Timetable(object):
                     if course != -1:
                         self.course_positions[course].remove((i,ts))
                         self.course_positions[course].append((best[i],ts))
-                        # self.course_taught_in[course][i]-=1
-                        # self.course_taught_in[course][best[i]]+=1
+                        self.course_taught_in[course][i]-=1
+                        self.course_taught_in[course][best[i]]+=1
 
                     self.schedule[best[i],ts] = course
                 self.score = self.score + best_delta
@@ -158,6 +161,8 @@ class Timetable(object):
     def insert_course(self, position, course):
         self.schedule[position] = course
         self.course_positions[course].append(position)
+        self.course_taught_in[course][position[0]]+=1
+
 
 
     def _delta_eval(self, pos_1, pos_2, position=True, swap=False):
@@ -186,6 +191,7 @@ class Timetable(object):
             course_1 = self.schedule[pos_1]
         else:
             course_1 = pos_1
+
         course_2 = self.schedule[pos_2]
 
         if position:
@@ -195,12 +201,16 @@ class Timetable(object):
         # if course_1 != -1:
         if position:
             self.course_positions[course_1].remove(pos_1)
+            self.course_taught_in[course_1][pos_1[0]]-=1
         self.course_positions[course_1].append(pos_2)
+        self.course_taught_in[course_1][pos_2[0]]+=1
 
         # if course_2 != -1:
         self.course_positions[course_2].remove(pos_2)
+        self.course_taught_in[course_2][pos_2[0]]-=1
         if position:
             self.course_positions[course_2].append(pos_1)
+            self.course_taught_in[course_2][pos_1[0]]+=1
 
 
 
@@ -244,26 +254,26 @@ class Timetable(object):
           return delta
 
 
-      def _room_delta_ts(self, ts, order):
-          rooms = range(self.data['basics']['rooms'])
-          delta = 0
-          value_before = 0
-          value_after = 0
+    def _room_delta_ts(self, ts, order):
+      rooms = range(self.data['basics']['rooms'])
+      delta = 0
+      value_before = 0
+      value_after = 0
 
-          for i in rooms:
-              if i != order[i]:
-                  course = self.schedule[i,ts]
+      for i in rooms:
+          if i != order[i]:
+              course = self.schedule[i,ts]
 
-                  if course != -1:
-                      taught_in = dict(self.course_taught_in[course])
-                      delta -= len([value for value in taught_in.values() if value != 0 ])
+              if course != -1:
+                  taught_in = dict(self.course_taught_in[course])
+                  delta -= len([value for value in taught_in.values() if value != 0 ])
 
-                      # simulate swaps
-                      taught_in[i]-=1
-                      taught_in[order[i]]+=1
-                      delta += len([value for value in taught_in.values() if value != 0 ])
+                  # simulate swaps
+                  taught_in[i]-=1
+                  taught_in[order[i]]+=1
+                  delta += len([value for value in taught_in.values() if value != 0 ])
 
-          return delta
+      return delta
 
 
     def _capacity_delta(self, pos_1, pos_2, position=True):
