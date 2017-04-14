@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import itemfreq
 import random
+from itertools import permutations
 
 
 class Timetable(object):
@@ -51,8 +52,64 @@ class Timetable(object):
         for room,ts in zip(rooms, tss):
             self.course_positions[-1].append((room,ts))
 
-        self.calc_score_total()
 
+        self.calc_score_total()
+        self.optimize_timeslots(3)
+
+
+
+
+    # hill climber
+    def optimize_timeslots(self, iterations='random', timeslots='all'):
+        rooms = range(self.data['basics']['rooms'])
+
+        if iterations=='random':
+            iterations = random.randint(0,len(rooms))
+        elif iterations=='all':
+            iterations = len(rooms)^len(rooms)
+        else:
+            iterations = random.randint(0,int( len(rooms) *iterations ))
+
+        if timeslots=='all':
+            timeslots = range(self.data["basics"]["periods_per_day"] * self.data["basics"]["days"])
+        elif timeslots=='random':
+            timeslots = range(random.randint(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"] ))
+        elif timeslots=='up-to-half':
+            timeslots = random.sample(range(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]), random.randint(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]) )
+        else:
+            timeslots = random.sample(range(0, self.data["basics"]["periods_per_day"] * self.data["basics"]["days"]), timeslots)
+
+        for ts in timeslots:
+            best_delta = 0
+            different = False
+            best = rooms
+            candidates = random.sample(list(permutations(rooms)), iterations)
+
+            for n in range(iterations):
+                candidate = candidates[n]
+
+                delta = 0
+                delta += self._capacity_delta( ts, candidate )
+                delta += self._room_delta(ts, candidate)
+
+                if delta < best_delta:
+                    best = candidate
+                    best_delta = delta
+                    different = True
+
+            if different:
+                timeslot_copy = self.schedule[:,ts].copy()
+                for i in rooms:
+                    course = timeslot_copy[i]
+
+                    if course != -1:
+                        self.course_positions[course].remove((i,ts))
+                        self.course_positions[course].append((best[i],ts))
+                        # self.course_taught_in[course][i]-=1
+                        # self.course_taught_in[course][best[i]]+=1
+
+                    self.schedule[best[i],ts] = course
+                self.score = self.score + best_delta
 
 
     def fill_unscheduled(self):
@@ -90,7 +147,7 @@ class Timetable(object):
                     room_to_swap = random.randint(0,num_rooms-1)
                     while(random_room == room_to_swap):
                         room_to_swap = random.randint(0,num_rooms-1)
-    
+
                     if (self._capacity_delta((random_room,col), (room_to_swap,col))+self._room_delta((random_room,col), (room_to_swap,col))) < 0:
                         self.swap_courses((random_room,col), (room_to_swap,col))
                         break
@@ -360,7 +417,7 @@ class Timetable(object):
 
         # If we are swapping an unscheduled course
         else:
-            
+
             already_penalized = []
             unscheduled_curricula = [q for q in self.data['course_curricula'][pos_1]]
             value_after = 0
@@ -369,7 +426,7 @@ class Timetable(object):
             day    =  pos_2[1] // periods_per_day
             day_a  = (pos_2[1] + 1) // periods_per_day
             day_aa = (pos_2[1] + 2) // periods_per_day
-            
+
             if day_b == day:
                 q_before = [qc for c in self.schedule[:, pos_2[1]-1] if c!=-1 for qc in self.data['course_curricula'][c]]
                 for q in unscheduled_curricula:
@@ -402,17 +459,17 @@ class Timetable(object):
                                 value_after -= 1
                         else:
                             value_after -= 1
-                    
+
                     else:
                         if day_b == day:
                             q_before = [qc for c in self.schedule[:, pos_2[1]-1] if c!=-1 for qc in self.data['course_curricula'][c]]
                             if q not in already_penalized and q not in q_before:
                                 value_after += 1
-                                
+
                         else:
                             value_after += 1
 
-            
+
             return penalty * value_after
 
 

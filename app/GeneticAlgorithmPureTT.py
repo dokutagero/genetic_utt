@@ -28,7 +28,7 @@ class GeneticAlgorithmPureTT():
         init_time = time.time()
         iteration = 0
 #        random_offspring_counter = 0
-        
+
 
         score_list = [individual.score for individual in self.population]
         best_individual = score_list.index(min(score_list))
@@ -38,7 +38,7 @@ class GeneticAlgorithmPureTT():
 #        number_hc = 1
         llenya_counter = 1
         llenya_gorda_counter = 1
-        
+
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
             p1, p2 = self.selection(destruction=True)
@@ -53,13 +53,13 @@ class GeneticAlgorithmPureTT():
 #                    self.population[p1].room_hill_climb(room2swap=self.population[p1].schedule.shape[0], rndtry=10)
 #                    self.population[p2].room_hill_climb(room2swap=self.population[p2].schedule.shape[0], rndtry=10)
 #                    llenya_gorda_counter -= 1
-            if (time.time() - init_time) / float(self.data["run_time"]) > 0.90 and iteration%50==0:
+            if (time.time() - init_time) / float(self.data["run_time"]) > 0.90 and iteration%100==0:
                     print 'llenyaeta'
-                    self.population[p1].room_hill_climb(room2swap=self.population[p1].schedule.shape[0], rndtry=3)
-                    self.population[p2].room_hill_climb(room2swap=self.population[p2].schedule.shape[0], rndtry=3)
+                    self.population[p1].room_hill_climb(room2swap=self.population[p1].schedule.shape[0]/2, rndtry=2)
+                    self.population[p2].room_hill_climb(room2swap=self.population[p2].schedule.shape[0]/2, rndtry=2)
                     llenya_counter -= 1
-#                    
-                
+#
+
             if (len(np.where((self.population[p1].schedule - self.population[p2].schedule) == 0)[0]) / float(self.population[p1].schedule.size)) > 0.75:
                 best_scores = [self.population[p1].score, self.population[p2].score]
                 parents = [p1,p2]
