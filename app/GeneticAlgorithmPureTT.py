@@ -27,25 +27,25 @@ class GeneticAlgorithmPureTT():
     def genetic_simulation(self):
         init_time = time.time()
         iteration = 0
-        random_offspring_counter = 0
+#        random_offspring_counter = 0
+        
 
         score_list = [individual.score for individual in self.population]
         best_individual = score_list.index(min(score_list))
         self.best_individual = self.population[best_individual]
         print "Best score after initialization: ", self.best_individual.score
 
-        number_hc = 1
+#        number_hc = 1
 
         while ((time.time() - init_time) < self.data["run_time"]):
             # Select 4 individuals randomly and return best of pairs
-            p1, p2 = self.selection()
+            p1, p2 = self.selection(destruction=True)
             self.population[p1].fill_unscheduled()
             self.population[p2].fill_unscheduled()
-            if (time.time() - init_time) / float(self.data["run_time"]) > 0.75 and iteration%100==0:
-                self.population[p1].room_hill_climb()
-                self.population[p2].room_hill_climb()
+#            if (time.time() - init_time) / float(self.data["run_time"]) > 0.75 and iteration%200==0:
+#                self.population[p1].room_hill_climb()
+#                self.population[p2].room_hill_climb()
                 # number_hc -= 1
-
 
             # if iteration%300==0:
             #     self.population[p1].room_hill_climb()
@@ -56,7 +56,7 @@ class GeneticAlgorithmPureTT():
 
                 o1 = copy.deepcopy(self.population[parents[best_scores.index(max(best_scores))]])
                 o2 = Timetable(self.data)
-                random_offspring_counter += 1
+#                random_offspring_counter += 1
                 # print  'added random offspring: ', random_offspring_counter
             else:
                 o1, o2 = self.recombination(self.population[p1], self.population[p2])
@@ -122,7 +122,7 @@ class GeneticAlgorithmPureTT():
         # col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
 
         vertical_max_size = 3
-        horizontal_max_size = 3
+        horizontal_max_size = 5
 
         # row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
         # row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)

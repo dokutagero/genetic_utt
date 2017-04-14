@@ -56,6 +56,7 @@ class Timetable(object):
 
 
     def fill_unscheduled(self):
+
         for unscheduled_course in self.unscheduled:
             for room,ts in self.course_positions[-1]:
                 if(
@@ -70,6 +71,10 @@ class Timetable(object):
                     # print unscheduled_course
                     # print self.unscheduled
                     self.unscheduled.remove(unscheduled_course)
+#                    if self.score != self.calc_score_total(save=False):
+#                        print self.schedule
+#                        print room,ts
+#                        print 'diferencia de delta: ', self.score - self.calc_score_total(save=False)
                     break
 
 
@@ -110,8 +115,6 @@ class Timetable(object):
             self.compactness_p += self._compactness_delta(pos_1, pos_2, position)
             self.min_wd_p += self._min_days_delta(pos_1, pos_2, position)
             self.room_p += self._room_delta(pos_1, pos_2, position)
-
-
 
         return sum(delta)
 
@@ -357,7 +360,8 @@ class Timetable(object):
 
         # If we are swapping an unscheduled course
         else:
-
+            
+            already_penalized = []
             unscheduled_curricula = [q for q in self.data['course_curricula'][pos_1]]
             value_after = 0
             day_bb = (pos_2[1] - 2) // periods_per_day
@@ -365,8 +369,7 @@ class Timetable(object):
             day    =  pos_2[1] // periods_per_day
             day_a  = (pos_2[1] + 1) // periods_per_day
             day_aa = (pos_2[1] + 2) // periods_per_day
-
-
+            
             if day_b == day:
                 q_before = [qc for c in self.schedule[:, pos_2[1]-1] if c!=-1 for qc in self.data['course_curricula'][c]]
                 for q in unscheduled_curricula:
@@ -378,6 +381,14 @@ class Timetable(object):
                                 value_after -= 1
                         else:
                             value_after -= 1
+                    else:
+                        if day_a == day:
+                            q_after = [qc for c in self.schedule[:, pos_2[1]+1] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in q_after:
+                                value_after += 1
+                                already_penalized.append(q)
+                        else:
+                            value_after += 1
 
 
             if day_a == day:
@@ -387,12 +398,21 @@ class Timetable(object):
                         if day_aa == day:
                             q_after2 = [qc for c in self.schedule[:, pos_2[1]+2] if c!=-1 for qc in self.data['course_curricula'][c]]
                             if q not in q_after2:
-                                # In this case we fixed compactness in timeslots before
+                                # In this case we fixed compactness in timeslots after
                                 value_after -= 1
                         else:
                             value_after -= 1
+                    
+                    else:
+                        if day_b == day:
+                            q_before = [qc for c in self.schedule[:, pos_2[1]-1] if c!=-1 for qc in self.data['course_curricula'][c]]
+                            if q not in already_penalized and q not in q_before:
+                                value_after += 1
+                                
+                        else:
+                            value_after += 1
 
-
+            
             return penalty * value_after
 
 
