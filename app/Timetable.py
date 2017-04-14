@@ -89,8 +89,8 @@ class Timetable(object):
                 candidate = candidates[n]
 
                 delta = 0
-                delta += self._capacity_delta( ts, candidate )
-                delta += self._room_delta(ts, candidate)
+                delta += self._capacity_delta_ts( ts, candidate )
+                delta += self._room_delta_ts(ts, candidate)
 
                 if delta < best_delta:
                     best = candidate
@@ -223,7 +223,47 @@ class Timetable(object):
             return sum(penalty)
 
 
+    def _capacity_delta_ts(self, ts, order):
+          rooms = range(self.data['basics']['rooms'])
+          delta = 0
 
+          for i in rooms:
+              if i != order[i]:
+                  capacity_1 = self.data['rooms'][i]
+                  capacity_2 = self.data['rooms'][order[i]]
+                  course = self.schedule[i,ts]
+
+                  if course != -1:
+                      students_per_course = self.data['students_per_course'][course]
+                  else:
+                      students_per_course = 0
+
+                  delta -= max(0, students_per_course - capacity_1)
+                  delta += max(0, students_per_course - capacity_2)
+
+          return delta
+
+
+      def _room_delta_ts(self, ts, order):
+          rooms = range(self.data['basics']['rooms'])
+          delta = 0
+          value_before = 0
+          value_after = 0
+
+          for i in rooms:
+              if i != order[i]:
+                  course = self.schedule[i,ts]
+
+                  if course != -1:
+                      taught_in = dict(self.course_taught_in[course])
+                      delta -= len([value for value in taught_in.values() if value != 0 ])
+
+                      # simulate swaps
+                      taught_in[i]-=1
+                      taught_in[order[i]]+=1
+                      delta += len([value for value in taught_in.values() if value != 0 ])
+
+          return delta
 
 
     def _capacity_delta(self, pos_1, pos_2, position=True):
