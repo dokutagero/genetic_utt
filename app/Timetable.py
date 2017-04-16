@@ -57,7 +57,7 @@ class Timetable(object):
 
 
         self.calc_score_total()
-        self.optimize_timeslots(3)
+        # self.optimize_timeslots(3)
 
 
 
@@ -105,9 +105,9 @@ class Timetable(object):
                 for i in rooms:
                     course = timeslot_copy[i]
 
+                    self.course_positions[course].remove((i,ts))
+                    self.course_positions[course].append((best[i],ts))
                     if course != -1:
-                        self.course_positions[course].remove((i,ts))
-                        self.course_positions[course].append((best[i],ts))
                         self.course_taught_in[course][i]-=1
                         self.course_taught_in[course][best[i]]+=1
 
@@ -201,16 +201,20 @@ class Timetable(object):
         # if course_1 != -1:
         if position:
             self.course_positions[course_1].remove(pos_1)
-            self.course_taught_in[course_1][pos_1[0]]-=1
+            if course_1 != -1:
+                self.course_taught_in[course_1][pos_1[0]]-=1
         self.course_positions[course_1].append(pos_2)
-        self.course_taught_in[course_1][pos_2[0]]+=1
+        if course_1 != -1:
+            self.course_taught_in[course_1][pos_2[0]]+=1
 
         # if course_2 != -1:
         self.course_positions[course_2].remove(pos_2)
-        self.course_taught_in[course_2][pos_2[0]]-=1
+        if course_2 != -1:
+            self.course_taught_in[course_2][pos_2[0]]-=1
         if position:
             self.course_positions[course_2].append(pos_1)
-            self.course_taught_in[course_2][pos_1[0]]+=1
+            if course_2 != -1:
+                self.course_taught_in[course_2][pos_1[0]]+=1
 
 
 
