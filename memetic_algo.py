@@ -11,7 +11,7 @@ import cProfile
 import re, pstats, StringIO
 import matplotlib.pyplot as plt
 
-import pickle
+# import pickle
 import os
 
 
@@ -60,11 +60,11 @@ if enable_profiler:
     pr.enable()
 
 
-population_sizes = [100, 50, 35, 15, 10]
-mutation_probabilities = [0.02, 0.05, 0.08, 0.15, 0.2]
+population_sizes = [100]#[100, 50, 35, 15, 10]
+mutation_probabilities = [0.02]#[0.02, 0.05, 0.08, 0.15, 0.2]
 compactness_initializations = [False, True]
-runs = range(5)
-datasets = [1,2]
+runs = range(4)
+datasets = [12]
 run_time = 1
 #
 # mutation_prob = 0.03
@@ -110,8 +110,12 @@ for dataset in datasets:
                         if not os.path.exists('tuning_outputs/dataset_'+str(dataset)+'/'+folder_name):
                             os.makedirs('tuning_outputs/dataset_'+str(dataset)+'/'+folder_name)
 
-                        with open('tuning_outputs/dataset_'+str(dataset)+'/'+folder_name+'/run'+str(run)+'.pkl', 'wb') as picklefile:
-                            pickle.dump(ga, picklefile)
+                        print ga.scores_per_iteration
+                        with open('tuning_outputs/dataset_'+str(dataset)+'/'+folder_name+'/run'+str(run)+'.csv', 'wb') as csvfile:
+                            csv_writer = csv.writer(csvfile, delimiter=',')
+                            for score in ga.scores_per_iteration:
+                                csv_writer.writerow([score])
+                            # csv_writer.writerows(ga.scores_per_iteration)
 
                         ga.print_population(ga.best_individual.schedule, 'tuning_outputs/dataset_'+str(dataset)+'/'+folder_name+'/timetable_output_run'+str(run)+'.sol')
 
