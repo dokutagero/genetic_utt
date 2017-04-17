@@ -6,7 +6,7 @@ from itertools import permutations
 
 class Timetable(object):
 
-    def __init__(self, data):
+    def __init__(self, data, compactness_ini=False):
         self.data = data
         self.unscheduled = []
         self.score = -1
@@ -56,6 +56,9 @@ class Timetable(object):
             self.course_positions[-1].append((room,ts))
 
 
+
+        if compactness_ini:
+            self.optimize_timeslots(2, timeslots='random')
         self.calc_score_total()
         # self.optimize_timeslots(3)
 

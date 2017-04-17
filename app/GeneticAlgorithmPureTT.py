@@ -10,18 +10,20 @@ import copy
 
 class GeneticAlgorithmPureTT():
 
-    def __init__(self, data, population_size, mutation_prob, fitness_model):
+    def __init__(self, data, population_size, mutation_prob, cross_window_size, compactness_ini=False):#, fitness_model):
         self.population_size = population_size
         self.mutation_prob = mutation_prob
         self.data = data
-        self.fitness_model = fitness_model
-
+        self.best_individual = None
+        # self.fitness_model = fitness_model
+        self.cross_window_size = cross_window_size
         self.population = []
+        self.compactness_ini = compactness_ini
+        self.scores_per_iteration = []
         self.initialize_population()
 
-        self.best_individual = None
-        self.print_population(self.population[0].schedule)
-        self.scores_per_iteration = []
+        # self.print_population(self.population[0].schedule)
+
 
 
     def genetic_simulation(self):
@@ -55,8 +57,8 @@ class GeneticAlgorithmPureTT():
 #                    llenya_gorda_counter -= 1
             if (time.time() - init_time) / float(self.data["run_time"]) > 0.90 and iteration%100==0:
                     print 'llenyaeta'
-                    self.population[p1].room_hill_climb(room2swap=self.population[p1].schedule.shape[0]/2, rndtry=2)
-                    self.population[p2].room_hill_climb(room2swap=self.population[p2].schedule.shape[0]/2, rndtry=2)
+                    self.population[p1].room_hill_climb(room2swap=self.population[p1].schedule.shape[0]/3, rndtry=2)
+                    self.population[p2].room_hill_climb(room2swap=self.population[p2].schedule.shape[0]/3, rndtry=2)
                     llenya_counter -= 1
 #
 
@@ -65,7 +67,7 @@ class GeneticAlgorithmPureTT():
                 parents = [p1,p2]
 
                 o1 = copy.deepcopy(self.population[parents[best_scores.index(max(best_scores))]])
-                o2 = Timetable(self.data)
+                o2 = Timetable(self.data, self.compactness_ini)
 #                random_offspring_counter += 1
                 # print  'added random offspring: ', random_offspring_counter
             else:
@@ -90,7 +92,7 @@ class GeneticAlgorithmPureTT():
         print self.best_individual.score
         self.best_individual.room_hill_climb(room2swap=self.population[p2].schedule.shape[0], rndtry=10)
         print self.best_individual.score
-        self.print_population(self.best_individual.schedule)
+        # self.print_population(self.best_individual.schedule)
 
         print "Best score: ", self.best_individual.score
         # print 'The score should be: ', self.best_individual.calc_score_total(save=False)
@@ -100,7 +102,7 @@ class GeneticAlgorithmPureTT():
 
     def initialize_population(self):
         for i in xrange(self.population_size):
-            Individual = Timetable(self.data)
+            Individual = Timetable(self.data, self.compactness_ini)
             self.population.append(Individual)
 
 
@@ -119,8 +121,8 @@ class GeneticAlgorithmPureTT():
             worst2 = individual_indices[fitness_values.index(max(fitness_values[2], fitness_values[3]))]
 
             if destruction and (len(np.where((self.population[worst1].schedule - self.population[worst2].schedule) == 0)[0]) / float(self.population[worst1].schedule.size)) > 0.75:
-                self.population[worst1] = Timetable(self.data)
-                self.population[worst2] = Timetable(self.data)
+                self.population[worst1] = Timetable(self.data, self.compactness_ini)
+                self.population[worst2] = Timetable(self.data, self.compactness_ini)
 
             return (individual_indices[fitness_values.index(min(fitness_values[0], fitness_values[1]))],
                     individual_indices[fitness_values.index(min(fitness_values[2], fitness_values[3]))])
@@ -134,9 +136,11 @@ class GeneticAlgorithmPureTT():
         # row_cut1, row_cut2 = np.random.choice(range(Parent1.schedule.shape[0]), size=2)
         # col_cut1, col_cut2 = np.random.choice(range(Parent1.schedule.shape[1]), size=2)
 
-        vertical_max_size = 3
-        horizontal_max_size = 5
-
+        vertical_max_size = self.cross_window_size[0]
+        horizontal_max_size = self.cross_window_size[1]
+        # print vertical_max_size
+        # print horizontal_max_size
+        # print self.cross_window_size
         # row_cut1 = np.random.choice(range(Parent1.schedule.shape[0]), size=1)
         # row_cut2 = min(np.random.choice(range(row_cut1, row_cut1 + vertical_max_size), size=1), Parent1.schedule.shape[0]-1)
         #
