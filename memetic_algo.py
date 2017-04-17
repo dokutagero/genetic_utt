@@ -70,10 +70,10 @@ run_time = 260
 #
 # mutation_prob = 0.03
 # pop_size = 20
+# print sys.argv[1:]
+params = sys.argv[1:]
+params[-1] = run_time
 for dataset in datasets:
-    print sys.argv[1:]
-    params = sys.argv[1:]
-    params[-1] = run_time
     # data = load_data.load(sys.argv[1:])
     # data[-1] = run_time
     data = load_data.load(params, index=dataset)
