@@ -57,8 +57,8 @@ class Timetable(object):
 
 
 
-        if compactness_ini:
-            self.optimize_timeslots(2, timeslots='random')
+        # if self.compactness_ini:
+            # self.optimize_timeslots(2, timeslots='random')
         self.calc_score_total()
         # self.optimize_timeslots(3)
 

@@ -62,10 +62,10 @@ if enable_profiler:
 
 population_sizes = [100]#[100, 50, 35, 15, 10]
 mutation_probabilities = [0.02]#[0.02, 0.05, 0.08, 0.15, 0.2]
-compactness_initializations = [False, True]
-runs = range(4)
+compactness_initializations = [False]
+runs = range(1)
 datasets = [12,13,1,5]
-run_time = 260
+run_time = 10
 
 #
 # mutation_prob = 0.03
@@ -96,7 +96,7 @@ for dataset in datasets:
         for mutation_prob in mutation_probabilities:
             for pop_size in population_sizes:
                 for compactness_initialization in compactness_initializations:
-                    for run in runs:
+                    for run in range(4):
 
                         ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
                                             crossover_window_size, compactness_initialization)
@@ -111,7 +111,6 @@ for dataset in datasets:
                         if not os.path.exists('tuning_outputs/dataset_'+str(dataset)+'/'+folder_name):
                             os.makedirs('tuning_outputs/dataset_'+str(dataset)+'/'+folder_name)
 
-                        print ga.scores_per_iteration
                         with open('tuning_outputs/dataset_'+str(dataset)+'/'+folder_name+'/run'+str(run)+'.csv', 'wb') as csvfile:
                             csv_writer = csv.writer(csvfile, delimiter=',')
                             for score in ga.scores_per_iteration:
