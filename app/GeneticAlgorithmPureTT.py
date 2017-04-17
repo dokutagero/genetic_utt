@@ -92,6 +92,9 @@ class GeneticAlgorithmPureTT():
         print self.best_individual.score
         self.best_individual.room_hill_climb(room2swap=self.population[p2].schedule.shape[0], rndtry=10)
         print self.best_individual.score
+        # Score after hill climber
+        self.scores_per_iteration.append(self.population[best_individual].score)
+
         # self.print_population(self.best_individual.schedule)
 
         print "Best score: ", self.best_individual.score

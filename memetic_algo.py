@@ -88,7 +88,7 @@ for dataset in datasets:
     print max_lectures
     horizontal_sizes = [3,4]
 
-    crossover_window_sizes = [(hs,max_lectures-vs) for hs,vs in zip(4*[horizontal_sizes[0]]+4*[horizontal_sizes[1]], 2*[-2,-1,0,1])]
+    crossover_window_sizes = [(hs,max_lectures+vs) for hs,vs in zip(4*[horizontal_sizes[0]]+4*[horizontal_sizes[1]], 2*[-2,-1,0,1])]
     print crossover_window_sizes
 
     for crossover_window_size in crossover_window_sizes:
