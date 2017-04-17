@@ -9,7 +9,7 @@ import sys
 
 import cProfile
 import re, pstats, StringIO
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 import pickle
 import os
@@ -60,12 +60,12 @@ if enable_profiler:
     pr.enable()
 
 
-population_sizes = [100, 50, 35, 15, 10]
-mutation_probabilities = [0.02, 0.05, 0.08, 0.15, 0.2]
+population_sizes = [100]#, 50, 35, 15, 10]
+mutation_probabilities = [0.02]#, 0.05, 0.08, 0.15, 0.2]
 compactness_initializations = [False, True]
-runs = range(5)
-datasets = [1,2]
-run_time = 1
+runs = range(4)
+datasets = [12,13,1,5]
+run_time = 260
 #
 # mutation_prob = 0.03
 # pop_size = 20
