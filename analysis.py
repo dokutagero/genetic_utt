@@ -1,3 +1,4 @@
+from __future__ import division
 import utils.load_data as load_data
 import sys
 import csv
@@ -14,7 +15,8 @@ datasets = [1,5,12,13]
 population_sizes =  [100, 50, 35, 15, 10]
 mutation_probabilities = [0.02, 0.05, 0.08, 0.15, 0.2]
 compactness_initializations = [False]
-runs = range(4)
+no_runs = 4
+runs = range(no_runs)
 
 results = {}
 for dataset in datasets:
@@ -58,6 +60,7 @@ for dataset in datasets:
                                     values.append(score[0])
 
                             minimum = int(float(values[-1]))
+                            # print minimum
                             iterations = len(values)
 
                             key = str(ps)+' '+str(mp)
@@ -115,12 +118,26 @@ for j,(col, rows) in enumerate(results.iteritems()):
 
 
         values = results[col][row]
-        minimum = min(values)
-        avg = sum(map(lambda v: (v - minimum)*100/minimum, values)) / len(values)
-        std = np.std(values)
-        avgs[i+1,j+1] = str(avg)
+        values_dataset = [values[x:x+no_runs] for x in range(0,len(values),no_runs)]
+
+        avg = []
+        std = []
+        for vd in values_dataset:
+            tmp = map(lambda v: (v - min(vd))*100/min(vd), vd)
+            avg.append(sum(tmp) / no_runs)
+            std.append(np.std(tmp))
+            # print vd, map(lambda v: (v - minimum)*100/minimum, vd) ,sum(map(lambda v: (v - minimum)*100/minimum, vd)) / float(no_runs)
+
+        print '\naverage',  sum(avg) / float(no_runs)
+        print avg
+        print '\nstd', sum(std) / float(no_runs)
+        print std
+        avg = sum(avg) / float(no_runs)
+        std = sum(std) / float(no_runs)
+
+        avgs[i+1,j+1] = str("{0:.1f}".format(avg))
         stds[i+1,j+1] = str("{0:.1f}".format(std))
-        both[i+1,j+1] = str(avg)+'; '+str("{0:.0f}".format(std))
+        both[i+1,j+1] = str("{0:.1f}".format(avg))+'; '+str("{0:.1f}".format(std))
 
 
 with open('tuning-avgs.csv', 'wb') as f:
