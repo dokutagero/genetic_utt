@@ -61,11 +61,11 @@ if enable_profiler:
 
 
 population_sizes = [100]#[100, 50, 35, 15, 10]
-mutation_probabilities = [0.02]#[0.02, 0.05, 0.08, 0.15, 0.2]
+mutation_probabilities = [0.08]#[0.02, 0.05, 0.08, 0.15, 0.2]
 compactness_initializations = [False]
 runs = range(1)
 datasets = [12,13,1,5]
-run_time = 10
+run_time = 260
 
 #
 # mutation_prob = 0.03
