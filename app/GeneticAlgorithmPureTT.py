@@ -21,10 +21,13 @@ class GeneticAlgorithmPureTT():
         self.compactness_ini = compactness_ini
         self.scores_per_iteration = []
         self.initialize_population()
+        self.mutation_counter = 0
+        self.generations = 0
 
         # self.print_population(self.population[0].schedule)
 
-
+    def get_real_mutation_rate(self):
+        return self.mutation_counter / float(self.generations) / (self.population[0].schedule.shape[0] * self.population[0].schedule.shape[1])
 
     def genetic_simulation(self):
         init_time = time.time()
@@ -99,6 +102,7 @@ class GeneticAlgorithmPureTT():
 
         print "Best score: ", self.best_individual.score
         # print 'The score should be: ', self.best_individual.calc_score_total(save=False)
+        self.generations = iteration
         print 'Iterations: ', iteration
 
 
@@ -235,6 +239,7 @@ class GeneticAlgorithmPureTT():
                     continue
 
                 Child.swap_courses((room, ts), (row, col))
+                self.mutation_counter += 1
 
         return Offspring
 
