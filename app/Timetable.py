@@ -10,7 +10,7 @@ class Timetable(object):
         self.data = data
         self.unscheduled = []
         self.score = -1
-        self.schedule = np.zeros(shape=(data["basics"]["rooms"], data["basics"]["periods_per_day"] * data["basics"]["days"]), dtype=np.int8) - 1
+        self.schedule = np.zeros(shape=(data["basics"]["rooms"], data["basics"]["periods_per_day"] * data["basics"]["days"]), dtype=np.int16) - 1
         self.course_positions = dict((int(course[1:]),[]) for course in data["courses"].keys())
 
         self.course_taught_in = dict((int(course[1:]),dict((room, 0) for room in range(data["basics"]['rooms']))) for course in data["courses"].keys())
