@@ -15,10 +15,10 @@ import os
 
 
 
-
+# python memetic_algo.py basic.utt courses.utt lecturers.utt rooms.utt curricula.utt relation.utt unavailability.utt 1000
 # datasets = [12,13,1,5]
 datasets = [2,3,4,6,7,8,9,10,11]
-run_time = 260
+run_time = 1
 
 models_to_test = [(15, 0.2, (3,1)), (100, 0.08, (4,-2))]
 #
@@ -27,47 +27,48 @@ params = sys.argv[1:]
 params[-1] = run_time
 for dataset in datasets:
     for pop_size, mutation_prob, window in models_to_test:
-        # data = load_data.load(sys.argv[1:])
-        # data[-1] = run_time
-        data = load_data.load(params, index=dataset)
+        for run in range(4):
+            # data = load_data.load(sys.argv[1:])
+            # data[-1] = run_time
+            data = load_data.load(params, index=dataset)
 
-        # Based on max number of lectures we define the crossover window
-        num_lectures = []
-        for k,v in data['courses'].iteritems():
-            num_lectures.append(v['number_of_lectures'])
+            # Based on max number of lectures we define the crossover window
+            num_lectures = []
+            for k,v in data['courses'].iteritems():
+                num_lectures.append(v['number_of_lectures'])
 
-        # The value corresponding to the max number of lectures for all subjects
-        max_lectures = max(num_lectures)
-
-
-        crossover_window_size = (model_to_test[2][0], max_lectures+model_to_test[2][1])
+            # The value corresponding to the max number of lectures for all subjects
+            max_lectures = max(num_lectures)
 
 
-        ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
-                            crossover_window_size, compactness_initialization)
-        ga.genetic_simulation()
+            crossover_window_size = (window[0], max_lectures+window[1])
 
-        folder_name = 'ps_'+str(pop_size)+'_'+'_mp'+str(mutation_prob)+'_cw_'+str(crossover_window_size[0])+'_'+str(crossover_window_size[1])
 
-        if not os.path.exists('tuning_outputs/test/dataset_'+str(dataset)):
-            os.makedirs('tuning_outputs//test/dataset_'+str(dataset))
+            ga = GeneticAlgorithmPureTT(data, pop_size, mutation_prob,
+                                crossover_window_size)
+            ga.genetic_simulation()
 
-        if not os.path.exists('tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name):
-            os.makedirs('tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name)
+            folder_name = 'ps_'+str(pop_size)+'_'+'_mp'+str(mutation_prob)+'_cw_'+str(crossover_window_size[0])+'_'+str(crossover_window_size[1])
 
-        with open('tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name+'/run'+str(run)+'.csv', 'wb') as csvfile:
-            csv_writer = csv.writer(csvfile, delimiter=',')
-            for score in ga.scores_per_iteration:
-                csv_writer.writerow([score])
-            csv_writer.writerow([ga.get_real_mutation_rate()])
-            # csv_writer.writerows(ga.scores_per_iteration)
+            if not os.path.exists('tuning_outputs/test/dataset_'+str(dataset)):
+                os.makedirs('tuning_outputs//test/dataset_'+str(dataset))
 
-        ga.print_population(ga.best_individual.schedule, 'tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name+'/timetable_output_run'+str(run)+'.sol')
+            if not os.path.exists('tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name):
+                os.makedirs('tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name)
 
-        print '*'*20
-        print folder_name
-        print 'run: ', run
-        print '*'*20
+            with open('tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name+'/run'+str(run)+'.csv', 'wb') as csvfile:
+                csv_writer = csv.writer(csvfile, delimiter=',')
+                for score in ga.scores_per_iteration:
+                    csv_writer.writerow([score])
+                csv_writer.writerow([ga.get_real_mutation_rate()])
+                # csv_writer.writerows(ga.scores_per_iteration)
+
+            ga.print_population(ga.best_individual.schedule, 'tuning_outputs/test/dataset_'+str(dataset)+'/'+folder_name+'/timetable_output_run'+str(run)+'.sol')
+
+            print '*'*20
+            print folder_name
+            print 'run: ', run
+            print '*'*20
 
 
 
