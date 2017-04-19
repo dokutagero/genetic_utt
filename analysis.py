@@ -32,13 +32,43 @@ for dataset in datasets:
     horizontal_sizes = [3,4]
     crossover_window_sizes = [(hs,max_lectures+vs) for hs,vs in zip(4*[horizontal_sizes[0]]+4*[horizontal_sizes[1]], 2*[-2,-1,0,1])]
 
+    values_min = []
+
     for ps in population_sizes:
         for ci in compactness_initializations:
             for mp in mutation_probabilities:
 
-                cw_i = -2
+                cw_i = -3
                 for cw in crossover_window_sizes:
-                    if cw[0] == 4 and cw_i == 2:
+                    if cw[0] == 4 and cw_i == 1:
+                        cw_i = -2
+                    else:
+                        cw_i+=1
+
+                    folder_name = 'ps_'+str(ps)+'_'+'ci_'+str(ci)+'_mp'+str(mp)+'_cw_'+str(cw[0])+'_'+str(cw[1])
+                    path_test = directory+'dataset_'+str(dataset)+'/'+folder_name
+
+                    for run in runs:
+                        file_path = path_test+'/run'+str(run)+'.csv'
+
+                        if not os.path.isfile(file_path):
+                            print "Missing ", file_path
+                        else:
+                            with open(file_path, 'rb') as csvfile:
+                            	csv_reader = csv.reader(csvfile, delimiter=' ')
+                            	csv_reader.next()
+                            	for score in csv_reader:
+                                    values_min.append(int(float(score[0])))
+
+    minimum = min(values_min)
+
+    for ps in population_sizes:
+        for ci in compactness_initializations:
+            for mp in mutation_probabilities:
+
+                cw_i = -3
+                for cw in crossover_window_sizes:
+                    if cw[0] == 4 and cw_i == 1:
                         cw_i = -2
                     else:
                         cw_i+=1
@@ -54,41 +84,26 @@ for dataset in datasets:
                         else:
                             values = []
                             with open(file_path, 'rb') as csvfile:
-                            	csv_reader = csv.reader(csvfile, delimiter=' ')
-                            	csv_reader.next()
-                            	for score in csv_reader:
+                                csv_reader = csv.reader(csvfile, delimiter=' ')
+                                csv_reader.next()
+                                for score in csv_reader:
                                     values.append(score[0])
 
-                            minimum = int(float(values[-1]))
+                            val = int(float(values[-1]))
                             # print minimum
                             iterations = len(values)
 
                             key = str(ps)+' '+str(mp)
                             cw_key = str(cw[0])+' '+str(cw_i)
-                            # print key
-                            # print cw_i
-                            # print cw_key
+
                             if results.has_key(cw_key):
                                 if results[cw_key].has_key(key):
-                                    results[cw_key][key].append(minimum)
+                                    results[cw_key][key]['val'].append(val)
+                                    results[cw_key][key]['minimum'].append(minimum)
                                 else:
-                                    results[cw_key][key] = [minimum]
+                                    results[cw_key][key] = {"val":[val],'minimum':[minimum]}
                             else:
-                                results[cw_key] = {key: [minimum]}
-
-
-# table = {}
-# for col, rows in results.iteritems():
-#     for row in rows:
-#         values = results[col][row]
-#         minimum = min(values)
-#         avg = sum(map(lambda v: (v - minimum)*100/minimum, values)) / len(values)
-#         std = np.std(values)
-#
-#         if table.has_key(col):
-#             table[col][row] = [avg, std]
-#         else:
-#             table[col] = {row: [avg, std]}
+                                results[cw_key] = {key: {"val":[val],'minimum':[minimum]}}
 
 
 avgs = np.chararray((26,9),itemsize=40)
@@ -117,21 +132,25 @@ for j,(col, rows) in enumerate(results.iteritems()):
             both[i,j+1] = header_col
 
 
-        values = results[col][row]
+        values = results[col][row]['val']
+        min_vals = results[col][row]['minimum']
         values_dataset = [values[x:x+no_runs] for x in range(0,len(values),no_runs)]
+        print values_dataset
+        min_vals_dataset = [min_vals[x:x+no_runs] for x in range(0,len(min_vals),no_runs)]
 
         avg = []
         std = []
-        for vd in values_dataset:
-            tmp = map(lambda v: (v - min(vd))*100/min(vd), vd)
+        for vd,m_vd in zip(values_dataset,min_vals_dataset):
+            tmp = map(lambda v,m: (v - m)*100/ m, vd,m_vd)
+            # print vd, m_vd, tmp
             avg.append(sum(tmp) / no_runs)
             std.append(np.std(tmp))
             # print vd, map(lambda v: (v - minimum)*100/minimum, vd) ,sum(map(lambda v: (v - minimum)*100/minimum, vd)) / float(no_runs)
 
-        print '\naverage',  sum(avg) / float(no_runs)
-        print avg
-        print '\nstd', sum(std) / float(no_runs)
-        print std
+        # print '\naverage',  sum(avg) / float(no_runs)
+        # print avg
+        # print '\nstd', sum(std) / float(no_runs)
+        # print std
         avg = sum(avg) / float(no_runs)
         std = sum(std) / float(no_runs)
 
