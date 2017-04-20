@@ -17,10 +17,10 @@ import os
 
 # python memetic_algo.py basic.utt courses.utt lecturers.utt rooms.utt curricula.utt relation.utt unavailability.utt 1000
 # datasets = [12,13,1,5]
-datasets = [2,3,4,6,7,8,9,10,11]
-run_time = 1
+datasets =[6]# [2,3,4,6,7,8,9,10,11]
+run_time = 260
 
-models_to_test = [(15, 0.2, (3,1)), (100, 0.08, (4,-2))]
+models_to_test = [(15, 0.02, (3,-2)), (35, 0.02, (3,0))]
 #
 
 params = sys.argv[1:]

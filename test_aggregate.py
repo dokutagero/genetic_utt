@@ -20,11 +20,11 @@ compactness_initializations = [False]
 no_runs = 4
 runs = range(no_runs)
 
-folder_name_1 = 'ps_15__mp0.2_cw_3'
-folder_name_2 = 'ps_100__mp0.08_cw_4'
+folder_name_1 = 'ps_15__mp0.02_cw_3'
+folder_name_2 = 'ps_35__mp0.02_cw_3'
 
-folder_name_1_old = 'ps_15_ci_False_mp0.2_cw_3'
-folder_name_2_old = 'ps_100_ci_False_mp0.08_cw_4'
+folder_name_1_old = 'ps_15_ci_False_mp0.02_cw_3'
+folder_name_2_old = 'ps_35_ci_False_mp0.02_cw_3'
 
 old = [1,5,12,13]
 model = 1
@@ -37,15 +37,15 @@ for model in [1,2]:
             folder_name = folder_name_1
             folder_name_old = folder_name_1_old
 
-            # 3, 0 -> index 2
-            index = 2
+            # 3, -2 -> index 0
+            index = 0
 
         else:
             folder_name = folder_name_2
             folder_name_old = folder_name_2_old
 
-            # 4,1  -> index 3
-            index = 3
+            # 3, 0  -> index 2
+            index = 2
 
 
         path_test = directory+'dataset_'+str(dataset)+'/'
@@ -71,14 +71,11 @@ for model in [1,2]:
                 file_path = folders[0]
 
             p = path_test + file_path
-            print p
 
             values = []
-            print p+'/run'+str(run)+'.csv'
             with open(p+'/run'+str(run)+'.csv', 'r') as csvfile:
                 csv_reader = csv.reader(csvfile, delimiter=' ')
                 csv_reader.next()
-                # print csv_reader
                 for score in csv_reader:
                     values.append(score[0])
 
@@ -86,9 +83,9 @@ for model in [1,2]:
                 minimum = int(float(values[-1]))
 
                 if model == 1:
-                    mutation = 0.2
+                    mutation = 0.02
                 else:
-                    mutation = 0.08
+                    mutation = 0.02
 
             else:
                 minimum = int(float(values[-2]))
@@ -104,60 +101,37 @@ for model in [1,2]:
                 results[dataset] = {"minimum": [minimum], "iterations": [iterations], 'mutation': [mutation]}
 
 
-# matrix = np.chararray((14,5),itemsize=40)
-#
-# for j,(col, rows) in enumerate(results.iteritems()):
-#     # for key in row:
-#     print rows
-    # for i,(row, val) in enumerate(rows.iteritems()):
-        # mini, mut, iterat = val
-        # print row, val
-        # pass
-        # print row, val
-        # for in row:
+datasets_to_keep = [2,3,4,6,7,8,9,10,11]
+i=0
+name = ''
+matrix = np.chararray((10,6),itemsize=40)
+for j,(col, dset) in enumerate(results.iteritems()):
 
-            # print mini,mut, iterat
-        # if j == 0 and i == 0:
-        #     matrix[i,j] = ''
-        #
-        # if j == 0:
-        #     header_row = ' '+str(row)
-        #     matrix[i+1,j] = header_row
-        #
-        # if i == 0:
-        #     header_col = ' '+str(col)
-        #     matrix[i,j+1] = header_col
-        #
-        # values = results[col][row]
-        # print values
-        # values_dataset = [values[x:x+no_runs] for x in range(0,len(values),no_runs)]
+    if col == 11:
+        print dset
+    if col in datasets_to_keep:
+        minimum = min(dset['minimum'])
+        model1 = (dset['minimum'][:4], dset['mutation'][:4], dset['iterations'][:4])
+        model2 = (dset['minimum'][4:], dset['mutation'][4:], dset['iterations'][4:])
+
+        E_model1 = ( str("{0:.2f}".format(sum(model1[0]) / float(no_runs))) ,  str("{0:.2f}".format(sum((np.array(model1[0])-minimum)/minimum*100) / no_runs)),  str("{0:.2f}".format( np.std((np.array(model1[0])-minimum)/minimum*100)) ) ,  str("{0:.4f}".format(sum(model1[1]) / no_runs)), sum(model1[2]) / no_runs)
+        E_model2 = ( str("{0:.2f}".format(sum(model2[0]) / float(no_runs))) ,  str("{0:.2f}".format(sum((np.array(model2[0])-minimum)/minimum*100) / no_runs)),  str("{0:.2f}".format( np.std((np.array(model2[0])-minimum)/minimum*100)) ) ,  str("{0:.4f}".format(sum(model2[1]) / no_runs)), sum(model2[2]) / no_runs)
+
+        E_model = E_model2
+        name = 'testing_'+folder_name_2_old+'.csv'
+
+        matrix[0,0] = ''
+
+        header_row = 'Dataset ' + str(col)
+        matrix[i+1,0] = header_row
+
+        if i == 0:
+            header_col = ['Avg. score', 'Avg. gap', 'Avg. spreading', 'Real mutation rate', 'Avg. #iterations']
+            matrix[i,1:6] = header_col
 
 
-#         avg = []
-#         std = []
-#         for vd in values_dataset:
-#             tmp = map(lambda v: (v - min(vd))*100/min(vd), vd)
-#             avg.append(sum(tmp) / no_runs)
-#             std.append(np.std(tmp))
-#             # print vd, map(lambda v: (v - minimum)*100/minimum, vd) ,sum(map(lambda v: (v - minimum)*100/minimum, vd)) / float(no_runs)
-#
-#         print '\naverage',  sum(avg) / float(no_runs)
-#         print avg
-#         print '\nstd', sum(std) / float(no_runs)
-#         print std
-#         avg = sum(avg) / float(no_runs)
-#         std = sum(std) / float(no_runs)
-#
-#         avgs[i+1,j+1] = str("{0:.1f}".format(avg))
-#         stds[i+1,j+1] = str("{0:.1f}".format(std))
-#         both[i+1,j+1] = str("{0:.1f}".format(avg))+'; '+str("{0:.1f}".format(std))
-#
-#
-# with open('tuning-avgs.csv', 'wb') as f:
-#     csv.writer(f).writerows(avgs)
-#
-# with open('tuning-stds.csv', 'wb') as f:
-#     csv.writer(f).writerows(stds)
-#
-# with open('tuning-both.csv', 'wb') as f:
-#     csv.writer(f).writerows(both)
+        matrix[i+1,1:6] = E_model
+        i+=1
+
+with open(name, 'wb') as f:
+    csv.writer(f).writerows(matrix)
