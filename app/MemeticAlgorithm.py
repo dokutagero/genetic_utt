@@ -1,4 +1,3 @@
-# import GeneticAlgorithmBase
 import numpy as np
 import time
 from collections import Counter
@@ -7,7 +6,7 @@ from Timetable import Timetable
 import pdb
 import copy
 
-class GeneticAlgorithmPureTT():
+class MemeticAlgorithm():
 
     def __init__(self, data, population_size, mutation_prob, cross_window_size, compactness_ini=False):
         self.population_size = population_size

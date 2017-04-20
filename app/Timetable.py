@@ -12,9 +12,7 @@ class Timetable(object):
         self.score = -1
         self.schedule = np.zeros(shape=(data["basics"]["rooms"], data["basics"]["periods_per_day"] * data["basics"]["days"]), dtype=np.int16) - 1
         self.course_positions = dict((int(course[1:]),[]) for course in data["courses"].keys())
-
         self.course_taught_in = dict((int(course[1:]),dict((room, 0) for room in range(data["basics"]['rooms']))) for course in data["courses"].keys())
-
 
         self.compactness_p = 0
         self.room_p = 0
@@ -52,20 +50,16 @@ class Timetable(object):
 
         rooms, tss = np.where(self.schedule == -1)
         self.course_positions[-1] = []
+
         for room,ts in zip(rooms, tss):
             self.course_positions[-1].append((room,ts))
 
-
-
-        # if self.compactness_ini:
-            # self.optimize_timeslots(2, timeslots='random')
         self.calc_score_total()
-        # self.optimize_timeslots(3)
-
-
 
 
     # hill climber
+    # Not being used at the moment
+    '''
     def optimize_timeslots(self, iterations='random', timeslots='all'):
         rooms = range(self.data['basics']['rooms'])
 
@@ -116,10 +110,10 @@ class Timetable(object):
 
                     self.schedule[best[i],ts] = course
                 self.score = self.score + best_delta
+    '''
 
 
     def fill_unscheduled(self):
-
         for unscheduled_course in self.unscheduled:
             for room,ts in self.course_positions[-1]:
                 if(
@@ -131,24 +125,14 @@ class Timetable(object):
                 else:
                     self.swap_courses(unscheduled_course, (room,ts), position=False)
                     self.score -= 10
-                    # print unscheduled_course
-                    # print self.unscheduled
                     self.unscheduled.remove(unscheduled_course)
-#                    if self.score != self.calc_score_total(save=False):
-#                        print self.schedule
-#                        print room,ts
-#                        print 'diferencia de delta: ', self.score - self.calc_score_total(save=False)
                     break
 
 
-
     def room_hill_climb(self, room2swap=1, rndtry=1):
-
         num_rooms = self.schedule.shape[0]
         for col in range(self.schedule.shape[1]):
             for random_room in random.sample(range(0,num_rooms), room2swap):
-#            for random_room in range(0,num_rooms):
-
                 for random_try in range(0,rndtry):
                     room_to_swap = random.randint(0,num_rooms-1)
                     while(random_room == room_to_swap):
@@ -159,13 +143,10 @@ class Timetable(object):
                         break
 
 
-
-
     def insert_course(self, position, course):
         self.schedule[position] = course
         self.course_positions[course].append(position)
         self.course_taught_in[course][position[0]]+=1
-
 
 
     def _delta_eval(self, pos_1, pos_2, position=True, swap=False):
@@ -176,18 +157,16 @@ class Timetable(object):
         delta.append(self._room_delta(pos_1, pos_2, position))
 
         if swap:
-            self.capacity_p += self._capacity_delta(pos_1, pos_2, position)
-            self.compactness_p += self._compactness_delta(pos_1, pos_2, position)
-            self.min_wd_p += self._min_days_delta(pos_1, pos_2, position)
-            self.room_p += self._room_delta(pos_1, pos_2, position)
+            self.capacity_p     += delta[0]
+            self.compactness_p  += delta[1]
+            self.min_wd_p       += delta[2]
+            self.room_p         += delta[3]
 
         return sum(delta)
 
 
     def swap_courses(self, pos_1, pos_2, position=True):
-
         total_delta = self._delta_eval(pos_1, pos_2, position, swap=True)
-        # if total_delta < 0:
         self.score = self.score + total_delta
 
         if position:
@@ -201,7 +180,6 @@ class Timetable(object):
             self.schedule[pos_1] = course_2
         self.schedule[pos_2] = course_1
 
-        # if course_1 != -1:
         if position:
             self.course_positions[course_1].remove(pos_1)
             if course_1 != -1:
@@ -210,7 +188,6 @@ class Timetable(object):
         if course_1 != -1:
             self.course_taught_in[course_1][pos_2[0]]+=1
 
-        # if course_2 != -1:
         self.course_positions[course_2].remove(pos_2)
         if course_2 != -1:
             self.course_taught_in[course_2][pos_2[0]]-=1
@@ -230,12 +207,11 @@ class Timetable(object):
         penalty.append(self._room_penalty())
 
         if save:
-            self.score = sum(penalty)
-            self.room_p = self._room_penalty()
-            self.min_wd_p = self._min_days_penalty()
-            self.capacity_p = self._capacity_penalty()
-            self.compactness_p = self._compactness_penalty()
-
+            self.score         = sum(penalty)
+            self.capacity_p    = penalty[1]
+            self.min_wd_p      = penalty[2]
+            self.compactness_p = penalty[3]
+            self.room_p        = penalty[4]
         else:
             return sum(penalty)
 
@@ -710,43 +686,6 @@ class Timetable(object):
         value = sum([len(curricula['curricula']) for curricula in secluded.values()])
 
         return value * penalty
-        """
-        cube = np.ones((individual.shape[0], individual.shape[1], max(self.data["curricula"].iteritems(), key=operator.itemgetter(1))[1])) * -2
-
-        for row in range(individual.shape[0]):
-            for col in range(individual.shape[1]):
-                if individual[row,col] != -1:
-                    for idx,curriculum in enumerate(self.data["course_curricula"][individual[row,col]]):
-                        cube[row,col,idx] = curriculum
-
-        secluded_counter = 0
-        # First column
-        col2_union = reduce(np.union1d, cube[:,1,:])
-        for idx in range(individual.shape[0]):
-            course_unique = set(cube[idx,0,:])
-            intersec = np.intersect1d(course_unique, col2_union)
-            secluded_counter += len(course_unique) - len(intersec)
-
-        # Middle columns
-        for col in range(1, individual.shape[1] - 1):
-            previous_col_union = reduce(np.union1d, cube[:,col-1,:])
-            next_col_union = reduce(np.union1d, cube[:,col+1,:])
-            col_union = np.union1d(previous_col_union, next_col_union)
-
-            for idx in range(individual.shape[0]):
-                course_unique = set(cube[idx,col,:])
-                intersec = np.intersect1d(course_unique, col_union)
-                secluded_counter += len(course_unique) - len(intersec)
-
-        # Last column
-        penultimate_col_union = reduce(np.union1d, cube[:,-2,:])
-        for idx in range(individual.shape[0]):
-            course_unique = set(cube[idx,-1,:])
-            intersec = np.intersect1d(course_unique, penultimate_col_union)
-            secluded_counter += len(course_unique) - len(intersec)
-
-        return secluded_counter * penalty """
-
 
 
     def _room_penalty(self):
@@ -791,9 +730,10 @@ class Timetable(object):
 
 
     def check_single_lecturer(self, pos_1, pos_2, position=True):
-        individual = self.schedule
         # We check if we are passing a position or a course when
         # checking conflicts from unscheduled list
+        individual = self.schedule
+
         if position:
             course = individual[pos_1]
         else:
@@ -823,9 +763,10 @@ class Timetable(object):
 
 
     def check_single_conflict(self, pos_1, pos_2, position=True):
-        individual = self.schedule
         # We check if we are passing a position or a course when
         # checking conflicts from unscheduled list
+        individual = self.schedule
+
         if position==True:
             course = individual[pos_1]
         else:
@@ -857,6 +798,7 @@ class Timetable(object):
     def check_single_availability(self, ind, timeslot, position=True):
         # We check if we are passing a position or a course when
         # checking conflicts from unscheduled list
+
         if position:
             course = self.schedule[ind]
         else:
