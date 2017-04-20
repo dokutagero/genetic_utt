@@ -19,8 +19,6 @@ class Timetable(object):
         self.capacity_p = 0
         self.min_wd_p = 0
 
-
-
         idcs = [idcs for idcs, val in np.ndenumerate(self.schedule)]
         np.random.shuffle(idcs)
 

@@ -1,3 +1,4 @@
+import operator
 import csv
 directory = "UniversityTimetablingCompetition"
 
@@ -14,6 +15,7 @@ def load(params, index=5):
 	data["curricula"] = (load_curriculas(params[4]))
 	data["relations"] = (load_relations(params[5]))
 	data["unavailability"] = (load_unavailability(params[6]))
+	sort_rooms(data)
 	text_to_int_courses(data)
 	unavailability_slots(data)
 	students_per_course(data)
@@ -22,6 +24,22 @@ def load(params, index=5):
 	course_curriculum(data)
 	min_days_per_course(data)
 	return data
+
+
+def sort_rooms(data):
+	data['room_mapping'] = {}
+	rooms = {}
+	print 'Assigned room number, (real room number, capacity)'
+	for i, pair in enumerate(sorted(data['rooms'].items(), key=operator.itemgetter(1))):
+		print i, pair
+		data['room_mapping'][i] = pair[0]
+		rooms[i] = pair[1]
+
+	data['rooms'] = rooms
+
+	print '\nOn the end, before returning the timetable, the rooms should be remapped! (the index does not necessarily correspond to the room number anymore)'
+	print 'Sorted rooms: ',data['rooms']
+	print 'Rooms mapping: ',data['room_mapping'],'\n'
 
 def students_per_course(data):
 	data['students_per_course'] = {}
